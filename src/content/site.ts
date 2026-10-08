@@ -84,3 +84,72 @@ export const services = [
     imageAlt: 'Campaign collage with billboards, posters and social ads',
   },
 ];
+
+export const faqIntro = {
+  eyebrow: 'Good to know',
+  title: 'Questions, answered',
+};
+
+export const faqs = [
+  {
+    question: 'What kind of companies do you work with?',
+    answer:
+      'Mostly ambitious brands at a turning point: startups getting ready to scale, established businesses repositioning, and teams launching something new. If design has to move a number, we are a good fit.',
+  },
+  {
+    question: 'How long does a typical project take?',
+    answer:
+      'A focused brand identity usually takes 6–8 weeks. Websites and product work run 8–12 weeks depending on scope. We agree on a timeline with clear milestones before anything starts.',
+  },
+  {
+    question: 'Do you only do design, or strategy too?',
+    answer:
+      'Both. Every project starts with strategy, because good design needs a clear brief. You can also hire us for strategy and workshops on their own.',
+  },
+  {
+    question: 'How do you measure whether the work performs?',
+    answer:
+      'We set success metrics with you at the start, such as conversion rate, sign-ups or brand recall, and check them after launch. Design that performs is the whole point.',
+  },
+  {
+    question: 'How do we get started?',
+    answer:
+      'Drop your email in the form below or write to hello@upthrust.agency. We will set up a short call to understand where you are and where you want to go.',
+  },
+];
+
+export const footer = {
+  wordmark: ['Upthrust', 'Design'],
+  sites: [
+    {
+      label: 'upthrust.agency',
+      href: 'https://upthrust.agency',
+      description: 'Brand, digital and campaign design studio.',
+      email: 'hello@upthrust.agency',
+    },
+    {
+      label: 'upthrust.io',
+      href: 'https://upthrust.io',
+      description: 'Product and growth design for tech teams.',
+      email: 'hello@upthrust.io',
+    },
+  ],
+  tagline: 'Bold design that performs.',
+  signup: {
+    title: 'Sign up for our emails',
+    consent:
+      'By checking this box you sign up for our newsletter and receive marketing emails and updates on our services. You can unsubscribe at any time.',
+    placeholder: 'typehere@youremail.com',
+    button: 'Submit',
+    success: 'Thanks! You’re on the list. Watch your inbox.',
+  },
+  social: [
+    { label: 'Instagram', href: 'https://www.instagram.com/' },
+    { label: 'LinkedIn', href: 'https://www.linkedin.com/' },
+  ],
+  legal: {
+    privacyLabel: 'Privacy Policy',
+    privacyHref: '/privacy',
+    copyright: '© Upthrust Design',
+  },
+};
