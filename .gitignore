@@ -29,3 +29,6 @@ docs/
 assets-src/
 *.blend
 *.blend1
+
+# raw figma exports (optimised copies go into src/assets or public)
+figma_assets/
