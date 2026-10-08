@@ -93,7 +93,8 @@ const lastCapability = hero.capabilities.length - 1;
 
 <style>
   /* Desktop is laid out on the Figma frame: 1440 wide, 288px grid cells.
-     1cqw = 14.4 design px, so positions below are design px / 14.4. */
+     The stage is a container capped at 1440px (and shorter on short screens),
+     so 1cqw = 14.4 design px and positions below are design px / 14.4. */
   .hero {
     container-type: inline-size;
     position: relative;
@@ -102,10 +103,11 @@ const lastCapability = hero.capabilities.length - 1;
     background-image:
       linear-gradient(to right, var(--color-grid) 1px, transparent 1px),
       linear-gradient(to bottom, var(--color-grid) 1px, transparent 1px);
-    background-size: 25cqw 25cqw;
+    background-size: 25vw 25vw;
   }
 
   .stage {
+    container-type: inline-size;
     position: relative;
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -241,6 +243,7 @@ const lastCapability = hero.capabilities.length - 1;
     z-index: 3;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
+    container-type: inline-size;
     border-top: 1px solid var(--color-grid);
     background: var(--color-paper);
   }
@@ -295,12 +298,20 @@ const lastCapability = hero.capabilities.length - 1;
 
   @media (min-width: 64rem) {
     .hero {
-      background-size: 20cqw 20cqw;
+      --stage-w: min(100%, 90rem, 160svh);
+      background-size: calc(var(--stage-w) / 5) calc(var(--stage-w) / 5);
+      background-position: center top;
+    }
+
+    .stage,
+    .proof {
+      width: var(--stage-w);
+      margin-inline: auto;
     }
 
     .stage {
       display: block;
-      height: 80cqw;
+      aspect-ratio: 1440 / 1152;
       padding: 0;
     }
 
@@ -365,7 +376,7 @@ const lastCapability = hero.capabilities.length - 1;
 
     .proof {
       grid-template-columns: repeat(5, 1fr);
-      min-height: 14.6cqw;
+      min-height: min(14.6cqw, 13.1rem, 23svh);
       border-top-color: var(--color-grid);
     }
 

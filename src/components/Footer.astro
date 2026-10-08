@@ -80,18 +80,18 @@ const [wordLeft, wordRight] = footer.wordmark;
     align-items: flex-end;
     justify-content: center;
     gap: 0.5cqw;
-    padding: 12cqw 1rem 3cqw;
+    padding: min(12cqw, 10rem) 1rem min(3cqw, 2.7rem);
     font-family: var(--font-display);
-    font-size: 14cqw;
+    font-size: min(14cqw, 12.6rem);
     line-height: 0.85;
     text-transform: uppercase;
     white-space: nowrap;
   }
 
   .mark {
-    width: 4.2cqw;
+    width: min(4.2cqw, 3.8rem);
     height: auto;
-    margin-bottom: -1.5cqw;
+    margin-bottom: max(-1.5cqw, -1.35rem);
     flex: none;
   }
 

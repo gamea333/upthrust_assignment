@@ -208,6 +208,7 @@ const last = services.length - 1;
     font-size: 1.25rem;
     font-weight: 700;
     text-transform: uppercase;
+    text-shadow: none;
     transition:
       background-color 0.2s,
       color 0.2s;
@@ -236,36 +237,43 @@ const last = services.length - 1;
     }
   }
 
-  /* Matches the Figma panel: 1440 wide, positions in cqw (design px / 14.4). */
+  /* Matches the Figma panel: 1440 wide. --u is 1/100 of the panel, capped at the
+     design width (14.4px) and on short screens, so it never outgrows the viewport. */
   @media (min-width: 64rem) {
+    .services {
+      --u: min(1cqw, 14.4px, 1.6svh);
+    }
+
     .panel-inner {
-      grid-template-columns: 34cqw 35cqw;
-      column-gap: 11cqw;
-      padding: 9cqw 0 8cqw 5.5cqw;
-      padding-left: 8.3cqw;
+      width: calc(100 * var(--u));
+      margin-inline: auto;
+      grid-template-columns: calc(34 * var(--u)) calc(35 * var(--u));
+      column-gap: calc(11 * var(--u));
+      padding: calc(9 * var(--u)) 0 calc(8 * var(--u)) calc(5.5 * var(--u));
+      padding-left: calc(8.3 * var(--u));
     }
 
     .eyebrow {
-      margin-left: -5.5cqw;
-      font-size: max(0.75rem, 0.9cqw);
+      margin-left: calc(-5.5 * var(--u));
+      font-size: max(0.75rem, calc(0.9 * var(--u)));
     }
 
     .title {
-      margin-left: -5.5cqw;
-      margin-bottom: 3cqw;
-      font-size: 6.4cqw;
+      margin-left: calc(-5.5 * var(--u));
+      margin-bottom: calc(3 * var(--u));
+      font-size: calc(6.4 * var(--u));
     }
 
     .intro {
-      font-size: max(1rem, 1.25cqw);
+      font-size: max(1rem, calc(1.25 * var(--u)));
     }
 
     .bullets {
-      font-size: max(0.9375rem, 1.1cqw);
+      font-size: max(0.9375rem, calc(1.1 * var(--u)));
     }
 
     .contact {
-      font-size: max(1.25rem, 1.6cqw);
+      font-size: max(1.25rem, calc(1.6 * var(--u)));
     }
 
     .services.is-horizontal .track {
