@@ -1,0 +1,31 @@
+# dependencies and build output
+node_modules/
+dist/
+.astro/
+.vercel/
+.output/
+
+# environment
+.env
+.env.*
+!.env.example
+
+# editor / OS
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# logs
+*.log
+npm-debug.log*
+
+# tooling output
+.playwright-mcp/
+
+# local planning notes and raw source assets (not part of the site)
+docs/
+assets-src/
+*.blend
+*.blend1
