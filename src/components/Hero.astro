@@ -1,0 +1,396 @@
+---
+import { Image, Picture } from 'astro:assets';
+import BoldDesign from '../assets/svg/headline-bold-design.svg';
+import Performs from '../assets/svg/headline-performs.svg';
+import statue from '../assets/images/statue.png';
+import lineart from '../assets/images/hero-lineart.png';
+import markCircle from '../assets/images/mark-circle.png';
+import markSquiggle from '../assets/images/mark-squiggle.png';
+import markUnderline from '../assets/images/mark-underline.png';
+import { hero, clientLogos } from '../content/site';
+
+const lastCapability = hero.capabilities.length - 1;
+---
+
+<section class="hero" aria-labelledby="hero-title">
+  <div class="stage">
+    <Image
+      src={lineart}
+      alt=""
+      class="lineart"
+      widths={[400, 800]}
+      sizes="(min-width: 1024px) 40vw, 70vw"
+    />
+
+    <h1 id="hero-title" class="contents">
+      <span class="sr-only">{hero.headline}</span>
+      <BoldDesign class="bold" aria-hidden="true" />
+      <span class="that" aria-hidden="true">
+        That
+      </span>
+      <Performs class="performs" aria-hidden="true" />
+    </h1>
+
+    <Picture
+      src={statue}
+      alt="Iridescent classical bust"
+      class="statue-img"
+      pictureAttributes={{ class: 'statue' }}
+      formats={['avif', 'webp']}
+      widths={[360, 540, 720, 1080]}
+      sizes="(min-width: 1024px) 40vw, 75vw"
+      loading="eager"
+      fetchpriority="high"
+    />
+
+    <p class="note note-left">
+      {hero.notes.left.lead}
+      <span class="marked">
+        {hero.notes.left.marked}
+        <img src={markCircle.src} alt="" class="mark-circle" width="109" height="46" />
+      </span>
+    </p>
+
+    <p class="note note-right">
+      {hero.notes.right.lead}
+      <span class="marked">
+        {hero.notes.right.marked}
+        <img src={markSquiggle.src} alt="" class="mark-squiggle" width="124" height="20" />
+      </span>
+    </p>
+
+    <ul class="capabilities" aria-label="What we do">
+      {hero.capabilities.map((item, i) => (
+        <li>
+          {i === lastCapability ? (
+            <span class="marked">
+              {item}
+              <img src={markUnderline.src} alt="" class="mark-underline" width="172" height="9" />
+            </span>
+          ) : (
+            item
+          )}{' '}
+          <span aria-hidden="true">·</span>
+        </li>
+      ))}
+    </ul>
+  </div>
+
+  <div class="proof">
+    <p class="proof-stat">
+      <strong>{hero.proof.stat}</strong>
+      <span>{hero.proof.label}</span>
+    </p>
+    <ul class="logos" aria-label="Clients">
+      {clientLogos.map((logo) => (
+        <li>
+          <Image src={logo.image} alt={logo.name} class="logo" height={40} />
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  /* Desktop is laid out on the Figma frame: 1440 wide, 288px grid cells.
+     1cqw = 14.4 design px, so positions below are design px / 14.4. */
+  .hero {
+    container-type: inline-size;
+    position: relative;
+    overflow: hidden;
+    background-color: var(--color-paper);
+    background-image:
+      linear-gradient(to right, var(--color-grid) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--color-grid) 1px, transparent 1px);
+    background-size: 25cqw 25cqw;
+  }
+
+  .stage {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      'bold bold'
+      'art art'
+      'perf perf'
+      'left right'
+      'cap cap';
+    align-items: start;
+    gap: 0 1rem;
+    padding: 6rem 1rem 3rem;
+  }
+
+  .bold,
+  .performs {
+    display: block;
+    width: 100%;
+    height: auto;
+    position: relative;
+  }
+
+  .bold {
+    grid-area: bold;
+    z-index: 1;
+    margin-bottom: -6cqw;
+  }
+
+  .statue {
+    grid-area: art;
+    justify-self: center;
+    width: min(72cqw, 26rem);
+    height: auto;
+    position: relative;
+    z-index: 2;
+  }
+
+  .statue-img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .performs {
+    grid-area: perf;
+    z-index: 3;
+    margin-top: -8cqw;
+  }
+
+  .that {
+    grid-area: art;
+    align-self: center;
+    justify-self: end;
+    position: relative;
+    z-index: 1;
+    margin-right: 2cqw;
+    font-family: var(--font-display);
+    font-size: min(16cqw, 7.5rem);
+    line-height: 1;
+    color: var(--color-brand);
+    text-transform: uppercase;
+  }
+
+  .lineart {
+    position: absolute;
+    right: -10cqw;
+    bottom: 0;
+    width: 70cqw;
+    height: auto;
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  .note,
+  .capabilities {
+    position: relative;
+    z-index: 3;
+    font-weight: 700;
+    line-height: 1.15;
+    text-transform: uppercase;
+  }
+
+  .note {
+    margin-top: 2rem;
+    font-size: 0.875rem;
+    max-width: 11ch;
+  }
+
+  .note-left {
+    grid-area: left;
+  }
+
+  .note-right {
+    grid-area: right;
+    justify-self: end;
+  }
+
+  .capabilities {
+    grid-area: cap;
+    margin-top: 1.5rem;
+    font-size: 1.25rem;
+  }
+
+  .marked {
+    position: relative;
+    display: inline-block;
+    white-space: nowrap;
+  }
+
+  .marked img {
+    position: absolute;
+    pointer-events: none;
+    max-width: none;
+  }
+
+  .mark-circle {
+    left: -12%;
+    top: -18%;
+    width: 124%;
+    height: 136%;
+  }
+
+  .mark-squiggle,
+  .mark-underline {
+    left: 0;
+    bottom: -0.3em;
+    width: 100%;
+    height: 0.3em;
+  }
+
+  .proof {
+    position: relative;
+    z-index: 3;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    border-top: 1px solid var(--color-grid);
+    background: var(--color-paper);
+  }
+
+  .proof-stat {
+    grid-column: 1 / -1;
+    padding: 1.25rem 1rem;
+  }
+
+  .proof-stat strong {
+    display: block;
+    font-size: 2rem;
+    line-height: 1;
+  }
+
+  .proof-stat span {
+    display: block;
+    max-width: 16ch;
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+  }
+
+  .logos {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-around;
+    gap: 1.5rem 2rem;
+    padding: 1rem 1rem 2rem;
+  }
+
+  .logo {
+    width: auto;
+    height: 1.25rem;
+    filter: brightness(0);
+  }
+
+  @media (min-width: 48rem) {
+    .note {
+      font-size: 1.125rem;
+    }
+
+    .capabilities {
+      font-size: 1.75rem;
+    }
+
+    .logo {
+      height: 1.5rem;
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .hero {
+      background-size: 20cqw 20cqw;
+    }
+
+    .stage {
+      display: block;
+      height: 80cqw;
+      padding: 0;
+    }
+
+    .bold,
+    .performs,
+    .statue,
+    .that,
+    .note,
+    .capabilities {
+      position: absolute;
+      margin: 0;
+    }
+
+    .bold {
+      left: 2.64cqw;
+      top: 10.56cqw;
+      width: 94.72cqw;
+    }
+
+    .statue {
+      left: 28.5cqw;
+      top: 15cqw;
+      width: 44cqw;
+    }
+
+    .that {
+      left: 56.25cqw;
+      top: 38.5cqw;
+      font-size: 10cqw;
+    }
+
+    .performs {
+      left: 10.8cqw;
+      top: 62cqw;
+      width: 78.5cqw;
+    }
+
+    .note-left {
+      left: 20.1cqw;
+      top: 35.5cqw;
+      font-size: 1.55cqw;
+    }
+
+    .note-right {
+      left: 80.3cqw;
+      top: 30cqw;
+      font-size: 2.1cqw;
+    }
+
+    .capabilities {
+      left: 4.9cqw;
+      top: 45.4cqw;
+      font-size: 2.8cqw;
+    }
+
+    .lineart {
+      right: 0;
+      bottom: auto;
+      top: 40cqw;
+      width: 40cqw;
+    }
+
+    .proof {
+      grid-template-columns: repeat(5, 1fr);
+      min-height: 14.6cqw;
+      border-top-color: var(--color-grid);
+    }
+
+    .proof-stat {
+      grid-column: auto;
+      padding: 2cqw 1.7cqw;
+    }
+
+    .proof-stat strong {
+      font-size: 3.3cqw;
+    }
+
+    .proof-stat span {
+      font-size: 0.9cqw;
+    }
+
+    .logos {
+      grid-column: 2 / -1;
+      flex-wrap: nowrap;
+      justify-content: space-between;
+      padding: 0 3cqw;
+    }
+
+    .logo {
+      height: 2.2cqw;
+    }
+  }
+</style>
