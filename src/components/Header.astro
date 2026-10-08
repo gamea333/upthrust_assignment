@@ -2,7 +2,7 @@
 import Logo from '../assets/svg/logo-upthrust.svg';
 ---
 
-<header class="absolute inset-x-0 top-0 z-30">
+<header class="site-header absolute inset-x-0 top-0 z-30">
   <div class="container-page flex h-16 items-center justify-between lg:h-20">
     <a href="/" class="block" aria-label="Upthrust home">
       <Logo class="h-6 w-auto lg:h-8" aria-hidden="true" />
@@ -10,6 +10,7 @@ import Logo from '../assets/svg/logo-upthrust.svg';
 
     <a
       href="#signup"
+      data-magnetic
       class="hidden font-display text-2xl text-brand uppercase transition-colors hover:text-brand-dark lg:block"
     >
       Contact us
@@ -63,3 +64,18 @@ import Logo from '../assets/svg/logo-upthrust.svg';
     });
   }
 </script>
+
+<style>
+  @media (prefers-reduced-motion: no-preference) {
+    :global(.js) .site-header {
+      animation: header-in 0.9s var(--ease-out) 0.2s both;
+    }
+
+    @keyframes header-in {
+      from {
+        opacity: 0;
+        translate: 0 -1rem;
+      }
+    }
+  }
+</style>

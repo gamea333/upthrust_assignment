@@ -1,50 +1,69 @@
 ---
 import { Image, getImage } from 'astro:assets';
-import tube from '../assets/images/tube.png';
+import tube from '../assets/images/tube.webp';
 import { services, servicesIntro } from '../content/site';
+import { gridBackgroundVars } from '../lib/grid';
 
-// One long tube render shared by all panels; each panel shows its own quarter.
-const tubeLg = await getImage({ src: tube, format: 'webp', width: 3200 });
+// Mobile/tablet: each stacked panel shows its own slice of the tube as a background.
+// Desktop: one high-res tube image spans the whole horizontal track (see .tube).
 const tubeSm = await getImage({ src: tube, format: 'webp', width: 1600 });
+const tubeMd = await getImage({ src: tube, format: 'webp', width: 3840 });
 const last = services.length - 1;
+const gridVars = await gridBackgroundVars();
 ---
 
 <section
   id="services"
   class="services"
   aria-labelledby="services-title"
-  style={`--tube-lg: url(${tubeLg.src}); --tube-sm: url(${tubeSm.src}); --panels: ${services.length};`}
+  style={`--tube-sm: url(${tubeSm.src}); --tube-md: url(${tubeMd.src}); --panels: ${services.length}; ${gridVars}`}
   data-services
 >
   <h2 id="services-title" class="sr-only">
     {servicesIntro}
   </h2>
 
+  <div class="grid-bg grid-drift" aria-hidden="true" data-grid></div>
+
   <div class="track" data-track>
+    <Image
+      src={tube}
+      alt=""
+      class="tube"
+      widths={[3840, 5760, 7680]}
+      sizes="400vw"
+      loading="lazy"
+      decoding="async"
+      data-tube
+    />
+
     {services.map((service, i) => (
       <article
         class="panel"
         style={`--pos: ${last ? (i / last) * 100 : 0}%`}
         aria-labelledby={`service-${i}`}
+        data-panel
       >
         <div class="panel-inner">
-          <p class="eyebrow" aria-hidden="true">
+          <p class="eyebrow" aria-hidden="true" data-reveal>
             {servicesIntro}
           </p>
-          <h3 id={`service-${i}`} class="title">
+          <h3 id={`service-${i}`} class="title" data-reveal style="--i: 1">
             {service.title}
           </h3>
 
-          <div class="collage">
-            <Image
-              src={service.image}
-              alt={service.imageAlt}
-              widths={[400, 700, 1000]}
-              sizes="(min-width: 64rem) 34vw, 92vw"
-            />
+          <div class="collage" data-reveal="scale" style="--i: 2">
+            <div class="collage-frame" data-collage>
+              <Image
+                src={service.image}
+                alt={service.imageAlt}
+                widths={[400, 700, 1000]}
+                sizes="(min-width: 64rem) 34vw, 92vw"
+              />
+            </div>
           </div>
 
-          <div class="body">
+          <div class="body" data-reveal style="--i: 3">
             <p class="intro">{service.intro}</p>
             <ul class="bullets">
               {service.bullets.map((item) => (
@@ -52,69 +71,119 @@ const last = services.length - 1;
               ))}
             </ul>
             {service.note && <p class="note">{service.note}</p>}
-            <a href="#signup" class="contact">
-              Contact<span class="sr-only"> us about {service.title}</span>
+            <a href="#signup" class="contact" data-magnetic>
+              <span>Contact</span>
+              <span class="sr-only"> us about {service.title}</span>
             </a>
           </div>
         </div>
       </article>
     ))}
   </div>
+
+  <!-- Desktop progress through the four panels (decorative; headings carry the content). -->
+  <div class="progress" aria-hidden="true">
+    <span class="count">
+      <span data-count>01</span> / {String(services.length).padStart(2, '0')}
+    </span>
+    <span class="bar">
+      <span data-bar></span>
+    </span>
+  </div>
 </section>
 
 <script>
-  // Desktop only: pin the section and scroll the panels sideways.
-  // Mobile, tablet and reduced-motion users get the stacked layout with no extra JS.
-  const query = '(min-width: 64rem) and (prefers-reduced-motion: no-preference)';
+  // Desktop only: pin the section and scroll the panels sideways, with the grid,
+  // tube and collages moving at different speeds for depth.
+  // The horizontal layout itself is CSS (see .js .track below) so it paints
+  // immediately; this script only adds the pin and the scroll-linked movement.
+  import { MOTION_QUERY, whenMotionAllowed } from '../scripts/motion';
+
   const section = document.querySelector<HTMLElement>('[data-services]');
   const track = section?.querySelector<HTMLElement>('[data-track]');
 
-  async function enableHorizontal() {
-    if (!section || !track) return;
+  if (section && track) {
+    whenMotionAllowed(({ gsap, getLenis }) => {
+      gsap.matchMedia().add(MOTION_QUERY, () => {
+        const distance = () => track.scrollWidth - section.clientWidth;
+        const bar = section.querySelector<HTMLElement>('[data-bar]');
+        const count = section.querySelector<HTMLElement>('[data-count]');
+        const panelCount = track.querySelectorAll('[data-panel]').length;
 
-    const [{ gsap }, { ScrollTrigger }] = await Promise.all([
-      import('gsap'),
-      import('gsap/ScrollTrigger'),
-    ]);
-    gsap.registerPlugin(ScrollTrigger);
-
-    gsap.matchMedia().add(query, () => {
-      section.classList.add('is-horizontal');
-      const distance = () => track.scrollWidth - section.clientWidth;
-
-      const tween = gsap.to(track, {
-        x: () => -distance(),
-        ease: 'none',
-        scrollTrigger: {
+        const tween = gsap.to(track, {
+          x: () => -distance(),
+          ease: 'none',
+          scrollTrigger: {
+            trigger: section,
+            pin: true,
+            // Lenis already smooths the scroll, so the panels follow it 1:1.
+            scrub: true,
+            end: () => `+=${distance()}`,
+            invalidateOnRefresh: true,
+            onUpdate: (self) => {
+              if (bar) bar.style.transform = `scaleX(${self.progress.toFixed(4)})`;
+              const index = Math.round(self.progress * (panelCount - 1)) + 1;
+              if (count && count.dataset.index !== String(index)) {
+                count.dataset.index = String(index);
+                count.textContent = String(index).padStart(2, '0');
+              }
+            },
+          },
+        });
+        const trigger = {
           trigger: section,
-          pin: true,
-          scrub: 0.6,
-          end: () => `+=${distance()}`,
+          start: () => tween.scrollTrigger!.start,
+          end: () => tween.scrollTrigger!.end,
+          scrub: true,
           invalidateOnRefresh: true,
-        },
+        };
+
+        // Background grid drifts slowly the other way: feels far away.
+        gsap.to('[data-grid]', {
+          x: () => -section.clientWidth * 0.08,
+          ease: 'none',
+          scrollTrigger: trigger,
+        });
+
+        // Tube lags a little behind the panels: sits between the grid and the content.
+        gsap.to('[data-tube]', { x: () => distance() * 0.1, ease: 'none', scrollTrigger: trigger });
+
+        // Each collage glides across its panel as the panel passes.
+        gsap.utils.toArray<HTMLElement>('[data-collage]').forEach((collage) => {
+          gsap.fromTo(
+            collage,
+            { x: 70 },
+            {
+              x: -70,
+              ease: 'none',
+              scrollTrigger: {
+                trigger: collage.closest('[data-panel]'),
+                containerAnimation: tween,
+                start: 'left right',
+                end: 'right left',
+                scrub: true,
+              },
+            },
+          );
+        });
+
+        // Keep keyboard focus visible: tabbing into an off-screen panel scrolls to it.
+        const panels = [...track.querySelectorAll<HTMLElement>('[data-panel]')];
+        const onFocus = (e: FocusEvent) => {
+          const index = panels.findIndex((p) => p.contains(e.target as Node));
+          const st = tween.scrollTrigger;
+          if (index < 0 || !st) return;
+          const y = st.start + (distance() * index) / Math.max(panels.length - 1, 1);
+          const lenis = getLenis();
+          if (lenis) lenis.scrollTo(y, { immediate: true });
+          else window.scrollTo({ top: y, behavior: 'instant' });
+        };
+        track.addEventListener('focusin', onFocus);
+
+        return () => track.removeEventListener('focusin', onFocus);
       });
-
-      // Keep keyboard focus visible: tabbing into an off-screen panel scrolls to it.
-      const panels = [...track.querySelectorAll<HTMLElement>('.panel')];
-      const onFocus = (e: FocusEvent) => {
-        const index = panels.findIndex((p) => p.contains(e.target as Node));
-        const st = tween.scrollTrigger;
-        if (index < 0 || !st) return;
-        const y = st.start + (distance() * index) / Math.max(panels.length - 1, 1);
-        window.scrollTo({ top: y, behavior: 'instant' });
-      };
-      track.addEventListener('focusin', onFocus);
-
-      return () => {
-        track.removeEventListener('focusin', onFocus);
-        section.classList.remove('is-horizontal');
-      };
     });
   }
-
-  const mq = window.matchMedia(query);
-  if (mq.matches) enableHorizontal();
-  else mq.addEventListener('change', (e) => e.matches && enableHorizontal(), { once: true });
 </script>
 
 <style>
@@ -123,7 +192,34 @@ const last = services.length - 1;
     position: relative;
     overflow: hidden;
     color: var(--color-paper);
-    background: var(--color-ink) url('/images/grid-dark.svg') center top / cover no-repeat;
+    background: var(--color-ink);
+  }
+
+  /* Warped grid on its own layer, oversized so it can drift without showing edges. */
+  .grid-bg {
+    position: absolute;
+    inset: -8%;
+    will-change: transform;
+  }
+
+  /* Fade the tube and grid out at the bottom so the section hands over to the FAQ
+     instead of ending on a hard cut. */
+  .services::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0;
+    height: 9rem;
+    background: linear-gradient(to bottom, transparent, var(--color-ink));
+    pointer-events: none;
+  }
+
+  .track {
+    position: relative;
+  }
+
+  .tube,
+  .progress {
+    display: none;
   }
 
   .panel {
@@ -135,9 +231,15 @@ const last = services.length - 1;
   }
 
   .panel-inner {
+    position: relative;
     display: grid;
     gap: 1.25rem;
     padding: 4rem 1rem;
+  }
+
+  .eyebrow,
+  .title {
+    text-shadow: 0 1px 14px rgb(0 0 0 / 0.75);
   }
 
   .eyebrow {
@@ -154,11 +256,21 @@ const last = services.length - 1;
     letter-spacing: -0.03em;
   }
 
+  .collage-frame {
+    overflow: hidden;
+    border-radius: 0.75rem;
+    box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 0.45);
+  }
+
   .collage img {
     display: block;
     width: 100%;
     height: auto;
-    border-radius: 0.75rem;
+    transition: scale 0.8s var(--ease-out);
+  }
+
+  .collage-frame:hover img {
+    scale: 1.04;
   }
 
   .body {
@@ -199,29 +311,35 @@ const last = services.length - 1;
     color: #d6d6d6;
   }
 
+  /* White button; orange fill sweeps in from the left on hover/focus. */
   .contact {
     display: inline-block;
     margin-top: 1.5rem;
     padding: 0.5rem 0.875rem;
-    background: var(--color-paper);
+    background: linear-gradient(var(--color-brand), var(--color-brand)) no-repeat left / 0% 100%
+      var(--color-paper);
     color: var(--color-brand);
     font-size: 1.25rem;
     font-weight: 700;
     text-transform: uppercase;
     text-shadow: none;
     transition:
-      background-color 0.2s,
-      color 0.2s;
+      background-size 0.45s var(--ease-out),
+      color 0.3s var(--ease-out),
+      translate 0.3s var(--ease-out),
+      transform 0.5s var(--ease-out);
   }
 
-  .contact:hover {
-    background: var(--color-brand);
+  .contact:hover,
+  .contact:focus-visible {
+    background-size: 100% 100%;
     color: var(--color-paper);
+    translate: 0 -2px;
   }
 
   @media (min-width: 48rem) {
     .panel {
-      background-image: var(--tube-lg);
+      background-image: var(--tube-md);
     }
 
     .panel-inner {
@@ -275,19 +393,69 @@ const last = services.length - 1;
     .contact {
       font-size: max(1.25rem, calc(1.6 * var(--u)));
     }
+  }
 
-    .services.is-horizontal .track {
+  /* Horizontal layout: desktop with JS and motion allowed. Applied by CSS from the
+     first paint (html.js is set inline in the head) so the page doesn't jump when
+     GSAP arrives. Without JS or with reduced motion the panels stay stacked. */
+  @media (min-width: 64rem) and (prefers-reduced-motion: no-preference) {
+    :global(.js) .track {
       display: flex;
       width: calc(var(--panels) * 100cqw);
       height: 100vh;
       will-change: transform;
     }
 
-    .services.is-horizontal .panel {
+    :global(.js) .panel {
       flex: 0 0 100cqw;
       display: flex;
       align-items: center;
-      background-position-y: 30%;
+      background-image: none;
+    }
+
+    :global(.js) .progress {
+      position: absolute;
+      left: 50%;
+      bottom: 2.5rem;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      translate: -50% 0;
+      font-size: 0.8125rem;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.08em;
+    }
+
+    :global(.js) .bar {
+      position: relative;
+      width: 10rem;
+      height: 2px;
+      background: rgb(255 255 255 / 0.2);
+      overflow: hidden;
+    }
+
+    :global(.js) .bar > span {
+      position: absolute;
+      inset: 0;
+      background: var(--color-brand);
+      transform: scaleX(0);
+      transform-origin: left;
+    }
+
+    /* One continuous high-res tube behind all panels (same framing the per-panel
+       backgrounds used: vertically 30% down the panel). */
+    :global(.js) .tube {
+      display: block;
+      position: absolute;
+      left: 0;
+      top: 30%;
+      width: 100%;
+      height: auto;
+      max-width: none;
+      translate: 0 -30%;
+      pointer-events: none;
+      will-change: transform;
     }
   }
 </style>

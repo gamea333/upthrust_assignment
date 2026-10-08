@@ -14,6 +14,11 @@ const { title, description } = Astro.props;
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Marks JS as available before first paint, so JS-only layouts (the horizontal
+         services scroll) render straight away instead of flashing the fallback. -->
+    <script is:inline>
+      document.documentElement.classList.add('js');
+    </script>
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -30,5 +35,10 @@ const { title, description } = Astro.props;
       <slot />
     </main>
     <slot name="footer" />
+
+    <script>
+      import '../scripts/reveal';
+      import '../scripts/magnetic';
+    </script>
   </body>
 </html>

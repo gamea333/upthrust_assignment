@@ -52,7 +52,7 @@ const { signup } = footer;
     <input id="signup-company" name="company" type="text" tabindex="-1" autocomplete="off" />
   </div>
 
-  <button type="submit" class="submit">
+  <button type="submit" class="submit" data-magnetic>
     {signup.button}
   </button>
 
@@ -150,7 +150,8 @@ const { signup } = footer;
     cursor: pointer;
     transition:
       background-color 0.2s,
-      color 0.2s;
+      color 0.2s,
+      transform 0.5s var(--ease-out);
   }
 
   .submit:hover {

@@ -2,23 +2,31 @@
 import LogoMark from '../assets/svg/logo-mark.svg';
 import { footer } from '../content/site';
 import SignupForm from './SignupForm.astro';
+import { gridBackgroundVars } from '../lib/grid';
 
 const [wordLeft, wordRight] = footer.wordmark;
+const gridVars = await gridBackgroundVars();
 ---
 
-<footer class="footer" aria-labelledby="footer-title">
+<footer class="footer" aria-labelledby="footer-title" style={gridVars}>
   <h2 id="footer-title" class="sr-only">
     Upthrust Design
   </h2>
 
-  <p class="wordmark" aria-hidden="true">
-    <span>{wordLeft}</span>
+  <div class="grid-bg grid-drift" aria-hidden="true"></div>
+
+  <p class="wordmark" aria-hidden="true" data-reveal="words">
+    <span class="word">
+      <span>{wordLeft}</span>
+    </span>
     <LogoMark class="mark" />
-    <span>{wordRight}</span>
+    <span class="word">
+      <span>{wordRight}</span>
+    </span>
   </p>
 
   <div class="columns">
-    <div class="sites">
+    <div class="sites" data-reveal>
       {footer.sites.map((site) => (
         <div class="site">
           <a href={site.href} class="ext" target="_blank" rel="noopener">
@@ -33,7 +41,7 @@ const [wordLeft, wordRight] = footer.wordmark;
       <p class="tagline">{footer.tagline}</p>
     </div>
 
-    <div class="aside">
+    <div class="aside" data-reveal style="--i: 2">
       <SignupForm />
 
       <ul class="links">
@@ -70,7 +78,9 @@ const [wordLeft, wordRight] = footer.wordmark;
 <style>
   .footer {
     container-type: inline-size;
-    background: var(--color-ink) url('/images/grid-dark.svg') center bottom / cover no-repeat;
+    position: relative;
+    overflow: hidden;
+    background: var(--color-ink);
     color: var(--color-paper);
     font-size: 0.8125rem;
   }
@@ -97,6 +107,8 @@ const [wordLeft, wordRight] = footer.wordmark;
 
   .columns {
     display: grid;
+    max-width: 90rem;
+    margin-inline: auto;
     border-top: 1px solid #333;
   }
 
@@ -184,6 +196,67 @@ const [wordLeft, wordRight] = footer.wordmark;
 
     .tagline {
       grid-column: 1 / -1;
+    }
+  }
+
+  /* Warped grid on its own layer so it can drift; fades in from the FAQ above
+     instead of starting on a hard line. */
+  .grid-bg {
+    position: absolute;
+    inset: -6%;
+    background-position: center bottom;
+    mask-image: linear-gradient(to bottom, transparent 8%, #000 45%);
+    pointer-events: none;
+    will-change: transform;
+  }
+
+  .wordmark,
+  .columns {
+    position: relative;
+  }
+
+  .word {
+    display: inline-block;
+    overflow: hidden;
+    /* room for Anton's descender-free caps without clipping the baseline */
+    padding-bottom: 0.04em;
+  }
+
+  .word > span {
+    display: inline-block;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    /* Wordmark: each word slides up out of its own mask, the mark pops in after. */
+    :global(.js) .wordmark[data-reveal] {
+      opacity: 1;
+      translate: none;
+    }
+
+    :global(.js) .wordmark .word > span {
+      translate: 0 105%;
+      transition: translate 1.1s var(--ease-out);
+    }
+
+    :global(.js) .wordmark .word:last-of-type > span {
+      transition-delay: 0.12s;
+    }
+
+    :global(.js) .wordmark .mark {
+      scale: 0;
+      rotate: -90deg;
+      transition:
+        scale 0.8s var(--ease-out) 0.45s,
+        rotate 0.8s var(--ease-out) 0.45s;
+    }
+
+    :global(.js) .wordmark.is-in .word > span {
+      translate: 0 0;
+    }
+
+    :global(.js) .wordmark.is-in .mark {
+      scale: 1;
+      rotate: 0deg;
     }
   }
 </style>
