@@ -1,0 +1,285 @@
+---
+import { Image, getImage } from 'astro:assets';
+import tube from '../assets/images/tube.png';
+import { services, servicesIntro } from '../content/site';
+
+// One long tube render shared by all panels; each panel shows its own quarter.
+const tubeLg = await getImage({ src: tube, format: 'webp', width: 3200 });
+const tubeSm = await getImage({ src: tube, format: 'webp', width: 1600 });
+const last = services.length - 1;
+---
+
+<section
+  id="services"
+  class="services"
+  aria-labelledby="services-title"
+  style={`--tube-lg: url(${tubeLg.src}); --tube-sm: url(${tubeSm.src}); --panels: ${services.length};`}
+  data-services
+>
+  <h2 id="services-title" class="sr-only">
+    {servicesIntro}
+  </h2>
+
+  <div class="track" data-track>
+    {services.map((service, i) => (
+      <article
+        class="panel"
+        style={`--pos: ${last ? (i / last) * 100 : 0}%`}
+        aria-labelledby={`service-${i}`}
+      >
+        <div class="panel-inner">
+          <p class="eyebrow" aria-hidden="true">
+            {servicesIntro}
+          </p>
+          <h3 id={`service-${i}`} class="title">
+            {service.title}
+          </h3>
+
+          <div class="collage">
+            <Image
+              src={service.image}
+              alt={service.imageAlt}
+              widths={[400, 700, 1000]}
+              sizes="(min-width: 64rem) 34vw, 92vw"
+            />
+          </div>
+
+          <div class="body">
+            <p class="intro">{service.intro}</p>
+            <ul class="bullets">
+              {service.bullets.map((item) => (
+                <li>{item}</li>
+              ))}
+            </ul>
+            {service.note && <p class="note">{service.note}</p>}
+            <a href="#signup" class="contact">
+              Contact<span class="sr-only"> us about {service.title}</span>
+            </a>
+          </div>
+        </div>
+      </article>
+    ))}
+  </div>
+</section>
+
+<script>
+  // Desktop only: pin the section and scroll the panels sideways.
+  // Mobile, tablet and reduced-motion users get the stacked layout with no extra JS.
+  const query = '(min-width: 64rem) and (prefers-reduced-motion: no-preference)';
+  const section = document.querySelector<HTMLElement>('[data-services]');
+  const track = section?.querySelector<HTMLElement>('[data-track]');
+
+  async function enableHorizontal() {
+    if (!section || !track) return;
+
+    const [{ gsap }, { ScrollTrigger }] = await Promise.all([
+      import('gsap'),
+      import('gsap/ScrollTrigger'),
+    ]);
+    gsap.registerPlugin(ScrollTrigger);
+
+    gsap.matchMedia().add(query, () => {
+      section.classList.add('is-horizontal');
+      const distance = () => track.scrollWidth - section.clientWidth;
+
+      const tween = gsap.to(track, {
+        x: () => -distance(),
+        ease: 'none',
+        scrollTrigger: {
+          trigger: section,
+          pin: true,
+          scrub: 0.6,
+          end: () => `+=${distance()}`,
+          invalidateOnRefresh: true,
+        },
+      });
+
+      // Keep keyboard focus visible: tabbing into an off-screen panel scrolls to it.
+      const panels = [...track.querySelectorAll<HTMLElement>('.panel')];
+      const onFocus = (e: FocusEvent) => {
+        const index = panels.findIndex((p) => p.contains(e.target as Node));
+        const st = tween.scrollTrigger;
+        if (index < 0 || !st) return;
+        const y = st.start + (distance() * index) / Math.max(panels.length - 1, 1);
+        window.scrollTo({ top: y, behavior: 'instant' });
+      };
+      track.addEventListener('focusin', onFocus);
+
+      return () => {
+        track.removeEventListener('focusin', onFocus);
+        section.classList.remove('is-horizontal');
+      };
+    });
+  }
+
+  const mq = window.matchMedia(query);
+  if (mq.matches) enableHorizontal();
+  else mq.addEventListener('change', (e) => e.matches && enableHorizontal(), { once: true });
+</script>
+
+<style>
+  .services {
+    container-type: inline-size;
+    position: relative;
+    overflow: hidden;
+    color: var(--color-paper);
+    background: var(--color-ink) url('/images/grid-dark.svg') center top / cover no-repeat;
+  }
+
+  .panel {
+    position: relative;
+    background-image: var(--tube-sm);
+    background-repeat: no-repeat;
+    background-size: calc(var(--panels) * 100%) auto;
+    background-position: var(--pos) 18%;
+  }
+
+  .panel-inner {
+    display: grid;
+    gap: 1.25rem;
+    padding: 4rem 1rem;
+  }
+
+  .eyebrow {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  .title {
+    margin-top: -0.75rem;
+    font-size: clamp(2.25rem, 9cqw, 4rem);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+
+  .collage img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 0.75rem;
+  }
+
+  .body {
+    max-width: 34rem;
+    /* the tube runs behind the copy; keep it readable */
+    text-shadow: 0 1px 12px rgb(0 0 0 / 0.85);
+  }
+
+  .intro {
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.35;
+  }
+
+  .bullets {
+    margin-top: 1.25rem;
+    display: grid;
+    gap: 0.5rem;
+    font-size: 0.9375rem;
+  }
+
+  .bullets li {
+    position: relative;
+    padding-left: 1.25rem;
+  }
+
+  .bullets li::before {
+    content: '✦';
+    position: absolute;
+    left: 0;
+    color: var(--color-brand);
+  }
+
+  .note {
+    margin-top: 1rem;
+    font-size: 0.875rem;
+    font-style: italic;
+    color: #d6d6d6;
+  }
+
+  .contact {
+    display: inline-block;
+    margin-top: 1.5rem;
+    padding: 0.5rem 0.875rem;
+    background: var(--color-paper);
+    color: var(--color-brand);
+    font-size: 1.25rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    transition:
+      background-color 0.2s,
+      color 0.2s;
+  }
+
+  .contact:hover {
+    background: var(--color-brand);
+    color: var(--color-paper);
+  }
+
+  @media (min-width: 48rem) {
+    .panel {
+      background-image: var(--tube-lg);
+    }
+
+    .panel-inner {
+      grid-template-columns: 1fr 1fr;
+      align-items: start;
+      gap: 1.5rem 2.5rem;
+      padding: 5rem 2rem;
+    }
+
+    .eyebrow,
+    .title {
+      grid-column: 1 / -1;
+    }
+  }
+
+  /* Matches the Figma panel: 1440 wide, positions in cqw (design px / 14.4). */
+  @media (min-width: 64rem) {
+    .panel-inner {
+      grid-template-columns: 34cqw 35cqw;
+      column-gap: 11cqw;
+      padding: 9cqw 0 8cqw 5.5cqw;
+      padding-left: 8.3cqw;
+    }
+
+    .eyebrow {
+      margin-left: -5.5cqw;
+      font-size: max(0.75rem, 0.9cqw);
+    }
+
+    .title {
+      margin-left: -5.5cqw;
+      margin-bottom: 3cqw;
+      font-size: 6.4cqw;
+    }
+
+    .intro {
+      font-size: max(1rem, 1.25cqw);
+    }
+
+    .bullets {
+      font-size: max(0.9375rem, 1.1cqw);
+    }
+
+    .contact {
+      font-size: max(1.25rem, 1.6cqw);
+    }
+
+    .services.is-horizontal .track {
+      display: flex;
+      width: calc(var(--panels) * 100cqw);
+      height: 100vh;
+      will-change: transform;
+    }
+
+    .services.is-horizontal .panel {
+      flex: 0 0 100cqw;
+      display: flex;
+      align-items: center;
+      background-position-y: 30%;
+    }
+  }
+</style>
