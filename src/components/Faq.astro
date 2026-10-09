@@ -1,0 +1,181 @@
+---
+import { faqIntro, faqs } from '../content/site';
+---
+
+<section class="faq" aria-labelledby="faq-title">
+  <div class="container-page faq-grid">
+    <div class="intro">
+      <p class="eyebrow" data-reveal>
+        {faqIntro.eyebrow}
+      </p>
+      <h2 id="faq-title" class="title" data-reveal style="--i: 1">
+        {faqIntro.title}
+      </h2>
+    </div>
+
+    <div class="items">
+      {faqs.map((item, i) => (
+        <details class="item" open={i === 0} data-reveal style={`--i: ${i + 1}`}>
+          <summary>
+            <h3>{item.question}</h3>
+            <span class="icon" aria-hidden="true" />
+          </summary>
+          <p>{item.answer}</p>
+        </details>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .faq {
+    background: var(--color-ink);
+    color: var(--color-paper);
+    padding-block: 4rem;
+  }
+
+  .faq-grid {
+    display: grid;
+    gap: 2rem;
+  }
+
+  .eyebrow {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  .title {
+    margin-top: 0.25rem;
+    font-size: clamp(2.25rem, 6vw, 4.5rem);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+
+  .item {
+    border-bottom: 1px solid #333;
+  }
+
+  .item:first-child {
+    border-top: 1px solid #333;
+  }
+
+  summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-block: 1.25rem;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  summary h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+  }
+
+  summary:hover h3 {
+    color: var(--color-brand);
+  }
+
+  .icon {
+    position: relative;
+    flex: none;
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .icon::before,
+  .icon::after {
+    content: '';
+    position: absolute;
+    inset: 50% 0 auto;
+    height: 2px;
+    margin-top: -1px;
+    background: var(--color-brand);
+    transition: transform 0.2s;
+  }
+
+  .icon::after {
+    transform: rotate(90deg);
+  }
+
+  .item[open] .icon::after {
+    transform: rotate(0deg);
+  }
+
+  .item p {
+    max-width: 60ch;
+    padding-bottom: 1.5rem;
+    color: #cfcfcf;
+    line-height: 1.55;
+  }
+
+  @media (min-width: 64rem) {
+    .faq {
+      padding-block: 7rem;
+    }
+
+    .faq-grid {
+      grid-template-columns: 1fr 1.4fr;
+      gap: 4rem;
+    }
+
+    summary h3 {
+      font-size: 1.375rem;
+    }
+  }
+
+  /* heading stays in view while the questions scroll past (desktop) */
+  @media (min-width: 64rem) {
+    .intro {
+      position: sticky;
+      top: 6rem;
+      align-self: start;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    /* smooth open/close where supported (Chromium); other browsers just snap */
+    .item::details-content {
+      block-size: 0;
+      overflow-y: clip;
+      transition:
+        block-size 0.5s var(--ease-out),
+        content-visibility 0.5s allow-discrete;
+    }
+
+    .item[open]::details-content {
+      block-size: auto;
+    }
+
+    .item p {
+      opacity: 0;
+      translate: 0 -0.5rem;
+      transition:
+        opacity 0.5s var(--ease-out) 0.05s,
+        translate 0.5s var(--ease-out) 0.05s;
+    }
+
+    .item[open] p {
+      opacity: 1;
+      translate: 0 0;
+    }
+
+    summary h3 {
+      transition:
+        color 0.25s,
+        translate 0.4s var(--ease-out);
+    }
+
+    summary:hover h3 {
+      translate: 0.375rem 0;
+    }
+  }
+</style>
