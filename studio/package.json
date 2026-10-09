@@ -1,0 +1,25 @@
+{
+  "name": "upthrust-studio",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "sanity dev",
+    "build": "sanity build",
+    "deploy": "sanity deploy",
+    "seed": "node seed/build.mjs && sanity dataset import seed/content.ndjson production --replace"
+  },
+  "dependencies": {
+    "@sanity/icons": "^5.2.3",
+    "@sanity/orderable-document-list": "^2.0.26",
+    "@sanity/vision": "^6.18.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "sanity": "^6.18.0",
+    "styled-components": "^6.5.3"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,5 +1,7 @@
 ---
-import { footer } from '../content/site';
+import { getContent } from '../lib/content';
+
+const { footer } = await getContent();
 
 const { signup } = footer;
 ---

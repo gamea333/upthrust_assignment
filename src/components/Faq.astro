@@ -1,5 +1,7 @@
 ---
-import { faqIntro, faqs } from '../content/site';
+import { getContent } from '../lib/content';
+
+const { faqIntro, faqs } = await getContent();
 ---
 
 <section class="faq" aria-labelledby="faq-title">

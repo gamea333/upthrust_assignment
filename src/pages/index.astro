@@ -5,15 +5,17 @@ import Hero from '../components/Hero.astro';
 import Services from '../components/Services.astro';
 import Faq from '../components/Faq.astro';
 import Footer from '../components/Footer.astro';
+import Testimonials from '../components/Testimonials.astro';
+import { getContent } from '../lib/content';
+
+const { settings } = await getContent();
 ---
 
-<BaseLayout
-  title="Upthrust Design — Bold design that performs"
-  description="Upthrust is a strategy-led design studio for brand identity, digital products and campaigns."
->
+<BaseLayout title={settings.title} description={settings.description}>
   <Header slot="header" />
   <Hero />
   <Services />
+  <Testimonials />
   <Faq />
   <Footer slot="footer" />
 </BaseLayout>

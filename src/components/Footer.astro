@@ -1,9 +1,10 @@
 ---
 import LogoMark from '../assets/svg/logo-mark.svg';
-import { footer } from '../content/site';
+import { getContent } from '../lib/content';
 import SignupForm from './SignupForm.astro';
 import { gridBackgroundVars } from '../lib/grid';
 
+const { footer } = await getContent();
 const [wordLeft, wordRight] = footer.wordmark;
 const gridVars = await gridBackgroundVars();
 ---

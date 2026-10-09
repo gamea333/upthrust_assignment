@@ -7,7 +7,9 @@ import lineart from '../assets/images/hero-lineart.png';
 import markCircle from '../assets/images/mark-circle.png';
 import markSquiggle from '../assets/images/mark-squiggle.png';
 import markUnderline from '../assets/images/mark-underline.png';
-import { hero, clientLogos } from '../content/site';
+import { getContent, imageSource } from '../lib/content';
+
+const { hero, clientLogos } = await getContent();
 
 const lastCapability = hero.capabilities.length - 1;
 ---
@@ -101,7 +103,7 @@ const lastCapability = hero.capabilities.length - 1;
     <ul class="logos" aria-label="Clients">
       {clientLogos.map((logo, i) => (
         <li data-reveal style={`--i: ${i + 1}`}>
-          <Image src={logo.image} alt={logo.name} class="logo" height={40} />
+          <Image {...imageSource(logo.image, { height: 40 })} alt={logo.name} class="logo" />
         </li>
       ))}
     </ul>

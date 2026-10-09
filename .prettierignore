@@ -1,0 +1,7 @@
+dist
+.astro
+.vercel
+studio/dist
+studio/node_modules
+package-lock.json
+studio/package-lock.json

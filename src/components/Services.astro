@@ -1,13 +1,14 @@
 ---
 import { Image, getImage } from 'astro:assets';
 import tube from '../assets/images/tube.webp';
-import { services, servicesIntro } from '../content/site';
+import { getContent, imageSource } from '../lib/content';
 import { gridBackgroundVars } from '../lib/grid';
 
 // Mobile/tablet: each stacked panel shows its own slice of the tube as a background.
 // Desktop: one high-res tube image spans the whole horizontal track (see .tube).
 const tubeSm = await getImage({ src: tube, format: 'webp', width: 1600 });
 const tubeMd = await getImage({ src: tube, format: 'webp', width: 3840 });
+const { services, servicesIntro } = await getContent();
 const last = services.length - 1;
 const gridVars = await gridBackgroundVars();
 ---
@@ -55,7 +56,7 @@ const gridVars = await gridBackgroundVars();
           <div class="collage" data-reveal="scale" style="--i: 2">
             <div class="collage-frame" data-collage>
               <Image
-                src={service.image}
+                {...imageSource(service.image)}
                 alt={service.imageAlt}
                 widths={[400, 700, 1000]}
                 sizes="(min-width: 64rem) 34vw, 92vw"
