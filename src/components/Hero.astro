@@ -52,7 +52,11 @@ const lastCapability = hero.capabilities.length - 1;
       {hero.notes.left.lead}
       <span class="marked">
         {hero.notes.left.marked}
-        <img src={markCircle.src} alt="" class="mark-circle" width="109" height="46" />
+        <span
+          class="mark mark-circle"
+          aria-hidden="true"
+          style={`--mark: url(${markCircle.src})`}
+        ></span>
       </span>
     </p>
 
@@ -60,7 +64,11 @@ const lastCapability = hero.capabilities.length - 1;
       {hero.notes.right.lead}
       <span class="marked">
         {hero.notes.right.marked}
-        <img src={markSquiggle.src} alt="" class="mark-squiggle" width="124" height="20" />
+        <span
+          class="mark mark-squiggle"
+          aria-hidden="true"
+          style={`--mark: url(${markSquiggle.src})`}
+        ></span>
       </span>
     </p>
 
@@ -70,7 +78,11 @@ const lastCapability = hero.capabilities.length - 1;
           {i === lastCapability ? (
             <span class="marked">
               {item}
-              <img src={markUnderline.src} alt="" class="mark-underline" width="172" height="9" />
+              <span
+                class="mark mark-underline"
+                aria-hidden="true"
+                style={`--mark: url(${markUnderline.src})`}
+              ></span>
             </span>
           ) : (
             item
@@ -303,10 +315,12 @@ const lastCapability = hero.capabilities.length - 1;
     white-space: nowrap;
   }
 
-  .marked img {
+  /* Hand-drawn marks are stretched to fit their word, so they're backgrounds
+     rather than <img> (a stretched <img> is flagged as a distorted image). */
+  .marked .mark {
     position: absolute;
     pointer-events: none;
-    max-width: none;
+    background: var(--mark) center / 100% 100% no-repeat;
   }
 
   .mark-circle {
@@ -558,15 +572,15 @@ const lastCapability = hero.capabilities.length - 1;
     }
 
     /* hand-drawn marks draw themselves in after their words land */
-    :global(.js) .marked img {
+    :global(.js) .marked .mark {
       animation: draw 0.9s var(--ease-in-out) 1.5s both;
     }
 
-    :global(.js) .note-right .marked img {
+    :global(.js) .note-right .marked .mark {
       animation-delay: 1.65s;
     }
 
-    :global(.js) .capabilities .marked img {
+    :global(.js) .capabilities .marked .mark {
       animation-delay: 1.8s;
     }
 
