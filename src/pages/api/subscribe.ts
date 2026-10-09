@@ -62,4 +62,8 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 };
 
 // Anything other than POST.
-export const ALL: APIRoute = () => json(405, { error: 'Method not allowed.' });
+export const ALL: APIRoute = () => {
+  const response = json(405, { error: 'Method not allowed.' });
+  response.headers.set('Allow', 'POST');
+  return response;
+};
