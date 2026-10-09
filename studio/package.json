@@ -7,7 +7,7 @@
     "dev": "sanity dev",
     "build": "sanity build",
     "deploy": "sanity deploy",
-    "seed": "node seed/build.mjs && sanity dataset import seed/content.ndjson production --replace"
+    "seed": "node seed/build.mjs && sanity dataset import seed/content.ndjson --dataset production --replace"
   },
   "dependencies": {
     "@sanity/icons": "^5.2.3",
