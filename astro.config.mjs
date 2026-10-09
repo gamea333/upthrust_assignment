@@ -25,5 +25,16 @@ export default defineConfig({
 
   vite: {
     plugins: [tailwindcss()],
+    build: {
+      rollupOptions: {
+        treeshake: {
+          // The server build leaves a bare `import "rolldown"` in the function entry.
+          // Rolldown is a build tool with native binaries that aren't deployed, so on
+          // Vercel the function crashed on start. Nothing from it is used at runtime,
+          // so treat it as side-effect free and let the import be dropped.
+          moduleSideEffects: (id) => !/^rolldown(\/|$)/.test(id),
+        },
+      },
+    },
   },
 });
