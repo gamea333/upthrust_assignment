@@ -1,5 +1,6 @@
 ---
 import Logo from '../assets/svg/logo-upthrust.svg';
+import { getContent } from '../lib/content';
 
 interface Props {
   /** Where CONTACT US points; other pages link to the form on the home page. */
@@ -7,10 +8,21 @@ interface Props {
 }
 
 const { contactHref = '#signup' } = Astro.props;
+
+// Section links work on the home page (#services) and from other pages (/#services).
+const base = contactHref.startsWith('/') ? '/' : '';
+const { footer } = await getContent();
+const email = footer.sites[0]?.email;
+
+const menuLinks = [
+  { label: 'Services', href: `${base}#services` },
+  { label: 'FAQ', href: `${base}#faq` },
+  { label: 'Contact us', href: contactHref },
+];
 ---
 
-<header class="site-header absolute inset-x-0 top-0 z-30">
-  <div class="container-page flex h-16 items-center justify-between lg:h-20">
+<header class="site-header absolute inset-x-0 top-0 z-30" data-header>
+  <div class="bar container-page flex h-16 items-center justify-between lg:h-20">
     <a href="/" class="block" aria-label="Upthrust home">
       <Logo class="h-6 w-auto lg:h-8" aria-hidden="true" />
     </a>
@@ -25,57 +37,260 @@ const { contactHref = '#signup' } = Astro.props;
 
     <button
       type="button"
-      class="grid size-11 place-items-center text-brand lg:hidden"
+      class="toggle grid size-11 place-items-center lg:hidden"
       aria-expanded="false"
       aria-controls="mobile-menu"
       data-menu-toggle
     >
       <span class="sr-only">Menu</span>
-      <svg width="24" height="18" viewBox="0 0 24 18" fill="currentColor" aria-hidden="true">
-        <rect width="24" height="3" rx="1" />
-        <rect y="7.5" width="24" height="3" rx="1" />
-        <rect y="15" width="24" height="3" rx="1" />
-      </svg>
+      <span class="burger" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </span>
     </button>
   </div>
 
-  <nav
-    id="mobile-menu"
-    class="container-page hidden border-y border-grid bg-paper py-4 lg:hidden"
-    aria-label="Main"
-  >
-    <a href={contactHref} class="font-display text-3xl text-brand uppercase" data-menu-link>
-      Contact us
-    </a>
+  <!-- Phones and tablets: full-screen menu. Links are plain anchors, so they're
+       in the HTML for search engines and work without JavaScript. -->
+  <nav id="mobile-menu" class="menu lg:hidden" aria-label="Main" data-menu>
+    <ul class="menu-links">
+      {menuLinks.map((link, i) => (
+        <li style={`--i: ${i}`}>
+          <a href={link.href} data-menu-link>
+            <span>{link.label}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+
+    <div class="menu-foot">
+      {email && <a href={`mailto:${email}`}>{email}</a>}
+      <p>
+        {footer.social.map((item, i) => (
+          <>
+            <a href={item.href} target="_blank" rel="noopener">
+              {item.label}
+            </a>
+            {i < footer.social.length - 1 && ', '}
+          </>
+        ))}
+      </p>
+    </div>
   </nav>
 </header>
 
 <script>
-  const toggle = document.querySelector<HTMLButtonElement>('[data-menu-toggle]');
-  const menu = document.getElementById('mobile-menu');
+  // Mobile menu: aria-expanded drives both the animation (CSS) and the screen
+  // reader state. While open, focus stays inside the menu, the page behind
+  // doesn't scroll, and Esc / a link / the toggle closes it.
+  const header = document.querySelector<HTMLElement>('[data-header]');
+  const toggle = header?.querySelector<HTMLButtonElement>('[data-menu-toggle]');
+  const menu = header?.querySelector<HTMLElement>('[data-menu]');
 
-  if (toggle && menu) {
-    const setOpen = (open: boolean) => {
+  if (header && toggle && menu) {
+    const desktop = window.matchMedia('(min-width: 64rem)');
+    const isOpen = () => toggle.getAttribute('aria-expanded') === 'true';
+
+    // Closed menu: not focusable and hidden from assistive tech (but still in the HTML).
+    menu.inert = true;
+
+    const setOpen = (open: boolean, { restoreFocus = true } = {}) => {
       toggle.setAttribute('aria-expanded', String(open));
-      menu.classList.toggle('hidden', !open);
+      header.classList.toggle('is-open', open);
+      menu.inert = !open;
+      document.documentElement.classList.toggle('menu-open', open);
+      if (open) {
+        menu.querySelector<HTMLElement>('a')?.focus({ preventScroll: true });
+      } else if (restoreFocus) {
+        toggle.focus({ preventScroll: true });
+      }
     };
 
-    toggle.addEventListener('click', () =>
-      setOpen(toggle.getAttribute('aria-expanded') !== 'true'),
-    );
+    toggle.addEventListener('click', () => setOpen(!isOpen()));
+
+    // Following a link closes the menu; the browser then scrolls to the section.
     menu
       .querySelectorAll('[data-menu-link]')
-      .forEach((link) => link.addEventListener('click', () => setOpen(false)));
+      .forEach((link) =>
+        link.addEventListener('click', () => setOpen(false, { restoreFocus: false })),
+      );
+
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') setOpen(false);
+      if (!isOpen()) return;
+      if (e.key === 'Escape') {
+        setOpen(false);
+        return;
+      }
+      // Focus trap: Tab cycles between the toggle and the menu links.
+      if (e.key === 'Tab') {
+        const items = [toggle, ...menu.querySelectorAll<HTMLElement>('a')];
+        const index = items.indexOf(document.activeElement as HTMLElement);
+        const last = items.length - 1;
+        const next = e.shiftKey ? (index <= 0 ? last : index - 1) : index >= last ? 0 : index + 1;
+        e.preventDefault();
+        items[next].focus();
+      }
     });
+
+    // Rotating a tablet to desktop width closes it.
+    desktop.addEventListener('change', (e) => e.matches && isOpen() && setOpen(false));
   }
 </script>
 
 <style>
+  .bar {
+    position: relative;
+    z-index: 2; /* logo and toggle stay above the open menu */
+  }
+
+  /* Hamburger: three bars that morph into an X when open. */
+  .toggle {
+    color: var(--color-brand);
+    transition: color 0.3s;
+  }
+
+  .burger {
+    position: relative;
+    display: block;
+    width: 24px;
+    height: 18px;
+  }
+
+  .burger span {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    border-radius: 1px;
+    background: currentColor;
+    transition:
+      translate 0.4s var(--ease-out),
+      rotate 0.4s var(--ease-out),
+      opacity 0.2s;
+  }
+
+  .burger span:nth-child(1) {
+    top: 0;
+  }
+
+  .burger span:nth-child(2) {
+    top: 7.5px;
+  }
+
+  .burger span:nth-child(3) {
+    top: 15px;
+  }
+
+  .is-open .toggle {
+    color: var(--color-ink);
+  }
+
+  .is-open .burger span:nth-child(1) {
+    translate: 0 7.5px;
+    rotate: 45deg;
+  }
+
+  .is-open .burger span:nth-child(2) {
+    opacity: 0;
+  }
+
+  .is-open .burger span:nth-child(3) {
+    translate: 0 -7.5px;
+    rotate: -45deg;
+  }
+
+  /* Full-screen orange panel. Closed: clipped away to the top edge. */
+  .menu {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 6rem 1rem 2rem;
+    background: var(--color-brand);
+    color: var(--color-ink);
+    clip-path: inset(0 0 100% 0);
+    visibility: hidden;
+    transition:
+      clip-path 0.6s var(--ease-in-out),
+      visibility 0s linear 0.6s;
+  }
+
+  .is-open .menu {
+    clip-path: inset(0 0 0 0);
+    visibility: visible;
+    transition:
+      clip-path 0.6s var(--ease-in-out),
+      visibility 0s;
+  }
+
+  .menu-links {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .menu-links li {
+    overflow: hidden; /* each label rises out of its own line */
+  }
+
+  .menu-links a {
+    display: inline-block;
+    font-family: var(--font-display);
+    font-size: clamp(3.25rem, 17vw, 6rem);
+    line-height: 1.05;
+    text-transform: uppercase;
+  }
+
+  .menu-links span {
+    display: inline-block;
+    transition: translate 0.6s var(--ease-out);
+  }
+
+  .menu-links a:hover span,
+  .menu-links a:focus-visible span {
+    color: var(--color-paper);
+  }
+
+  .menu a:focus-visible {
+    outline-color: var(--color-ink);
+  }
+
+  .menu-foot {
+    display: grid;
+    gap: 0.5rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    transition: opacity 0.5s var(--ease-out);
+  }
+
+  .menu-foot a {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
   @media (prefers-reduced-motion: no-preference) {
+    .menu-links span {
+      translate: 0 110%;
+    }
+
+    .menu-foot {
+      opacity: 0;
+    }
+
+    .is-open .menu-links span {
+      translate: 0 0;
+      transition-delay: calc(0.2s + var(--i) * 0.08s);
+    }
+
+    .is-open .menu-foot {
+      opacity: 1;
+      transition-delay: 0.5s;
+    }
+
     :global(.js) .site-header {
-      animation: header-in 0.9s var(--ease-out) 0.2s both;
+      animation: header-in 0.9s var(--ease-out) 0.2s backwards; /* "backwards": nothing lingers after it ends, so the fixed menu can cover the screen */
     }
 
     @keyframes header-in {
@@ -84,5 +299,23 @@ const { contactHref = '#signup' } = Astro.props;
         translate: 0 -1rem;
       }
     }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .menu,
+    .is-open .menu {
+      transition: none;
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .menu {
+      display: none;
+    }
+  }
+
+  /* Page behind the open menu doesn't scroll. */
+  :global(html.menu-open) {
+    overflow: hidden;
   }
 </style>

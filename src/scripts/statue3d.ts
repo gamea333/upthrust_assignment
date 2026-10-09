@@ -31,7 +31,7 @@ import {
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { markLowPower, whenQuiet } from './scene-queue';
+import { compileWithTimeout, idle } from './scene-queue';
 
 type Options = {
   /** Positioned ancestor the canvas is placed in (the hero stage). */
@@ -54,7 +54,7 @@ export async function mountStatue3D({ stage, image }: Options) {
   const gltf = await new GLTFLoader()
     .setMeshoptDecoder(MeshoptDecoder)
     .loadAsync('/models/statue.glb');
-  await whenQuiet();
+  await idle();
 
   // Step 2 — renderer, environment and lights (short GPU work), in an idle slot.
   const canvas = document.createElement('canvas');
@@ -63,7 +63,8 @@ export async function mountStatue3D({ stage, image }: Options) {
 
   const renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true });
   // 1.5x is visually indistinguishable here and much cheaper than 2x.
-  let pixelRatio = Math.min(window.devicePixelRatio, 1.5);
+  // Small canvas, so full sharpness is cheap; steps down if a GPU struggles.
+  let pixelRatio = Math.min(window.devicePixelRatio, 2);
   renderer.setPixelRatio(pixelRatio);
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.outputColorSpace = SRGBColorSpace;
@@ -144,12 +145,12 @@ export async function mountStatue3D({ stage, image }: Options) {
     }
   };
 
-  // Step 3 — compile the shaders in the background (no main-thread freeze where
-  // the browser supports parallel compilation), then attach the canvas.
-  layout(image.getBoundingClientRect(), stage.getBoundingClientRect());
-  await renderer.compileAsync(scene, camera);
-  await whenQuiet();
+  // Step 3 — attach the (still invisible) canvas, then compile the shaders in
+  // the background (no main-thread freeze where parallel compile is supported).
   stage.append(canvas);
+  layout(image.getBoundingClientRect(), stage.getBoundingClientRect());
+  await compileWithTimeout(() => renderer.compileAsync(scene, camera));
+  await idle();
 
   // Cursor follow (eased).
   const turn = { x: 0, y: 0, tx: 0, ty: 0 };
@@ -177,39 +178,22 @@ export async function mountStatue3D({ stage, image }: Options) {
     }, 700); // after the cross-fade back
   };
 
-  // Adaptive quality: step the resolution down if frames are slow; if it is
-  // still slow at 1x, this device is better off with the image.
+  // Adaptive quality: if frames are slow, render at a lower resolution
+  // (down to 0.75x). It never switches itself off; only a GPU crash
+  // (webglcontextlost) hands back to the image.
   let lastFrame = 0;
   let slow = 0;
   let sampled = 0;
-  // Quick check: skip the first frames (GPU warm-up), then if the typical frame
-  // is slower than ~35 fps this device is better off with the images, so hand
-  // back to the image and skip any other 3D scene too.
-  const early: number[] = [];
+  const warmUpUntil = performance.now() + 2500;
   const adapt = (now: number) => {
-    if (lastFrame && early.length < 40) {
-      early.push(now - lastFrame);
-      if (early.length === 40) {
-        const settled = early.slice(10).sort((a, b) => a - b);
-        if (settled[15] > 28) {
-          markLowPower();
-          destroy();
-          return;
-        }
-      }
-    }
-    if (lastFrame) {
+    if (lastFrame && now > warmUpUntil) {
       sampled++;
       if (now - lastFrame > 22) slow++;
       if (sampled >= 60) {
-        if (slow > 20) {
-          if (pixelRatio > 1) {
-            pixelRatio = Math.max(1, pixelRatio - 0.5);
-            renderer.setPixelRatio(pixelRatio);
-            cssW = 0; // force a resize at the new ratio
-          } else {
-            destroy();
-          }
+        if (slow > 20 && pixelRatio > 0.75) {
+          pixelRatio = Math.max(0.75, pixelRatio - 0.25);
+          renderer.setPixelRatio(pixelRatio);
+          cssW = 0; // force a resize at the new ratio
         }
         sampled = 0;
         slow = 0;
