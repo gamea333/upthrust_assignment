@@ -26,7 +26,13 @@ const gridVars = await gridBackgroundVars();
 
   <div class="grid-bg grid-drift" aria-hidden="true" data-grid></div>
 
-  <div class="track" data-track>
+  <div
+    class="track"
+    data-track
+    role="region"
+    aria-label="Services (swipe or scroll sideways)"
+    tabindex="0"
+  >
     <Image
       src={tube}
       alt=""
@@ -110,6 +116,29 @@ const gridVars = await gridBackgroundVars();
 
   const section = document.querySelector<HTMLElement>('[data-services]');
   const track = section?.querySelector<HTMLElement>('[data-track]');
+
+  // Phones/tablets: keep the "01 / 04" counter in step with the swipe carousel.
+  if (section && track) {
+    const bar = section.querySelector<HTMLElement>('[data-bar]');
+    const count = section.querySelector<HTMLElement>('[data-count]');
+    const panelCount = track.querySelectorAll('[data-panel]').length;
+    let frame = 0;
+    track.addEventListener(
+      'scroll',
+      () => {
+        frame ||= requestAnimationFrame(() => {
+          frame = 0;
+          const max = track.scrollWidth - track.clientWidth;
+          if (max <= 0) return;
+          const progress = track.scrollLeft / max;
+          const index = Math.round(progress * (panelCount - 1)) + 1;
+          if (bar) bar.style.transform = `scaleX(${Math.max(index / panelCount, progress)})`;
+          if (count) count.textContent = String(index).padStart(2, '0');
+        });
+      },
+      { passive: true },
+    );
+  }
 
   if (section && track) {
     whenMotionAllowed(({ gsap, getLenis }) => {
@@ -270,7 +299,71 @@ const gridVars = await gridBackgroundVars();
     background-image: var(--tube-sm);
     background-repeat: no-repeat;
     background-size: calc(var(--panels) * 100%) auto;
-    background-position: var(--pos) 18%;
+    background-position: var(--pos) 55%;
+  }
+
+  /* Phones and tablets: the same side-by-side idea as desktop, as a native swipe
+     carousel. Panels sit edge to edge so their tube slices join into one tube,
+     the next panel peeks in to show it scrolls, and snapping lands on a panel. */
+  @media (max-width: 63.999rem) {
+    .track {
+      display: flex;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scroll-snap-type: x mandatory;
+      scroll-padding-inline: 1rem;
+      padding-inline: 1rem;
+      scrollbar-width: none;
+    }
+
+    .track::-webkit-scrollbar {
+      display: none;
+    }
+
+    .track:focus-visible {
+      outline-offset: -3px;
+    }
+
+    .panel {
+      flex: 0 0 86%;
+      scroll-snap-align: start;
+    }
+
+    .panel-inner {
+      height: 100%;
+      align-content: start;
+      padding: 3.5rem 1rem 2rem 0;
+    }
+
+    .progress {
+      position: relative;
+      z-index: 1; /* above the bottom fade (.services::after) */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      padding: 0 1rem 3.5rem;
+      font-size: 0.8125rem;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.08em;
+    }
+
+    .bar {
+      position: relative;
+      width: 8rem;
+      height: 2px;
+      background: rgb(255 255 255 / 0.2);
+      overflow: hidden;
+    }
+
+    .bar > span {
+      position: absolute;
+      inset: 0;
+      background: var(--color-brand);
+      transform: scaleX(0.25);
+      transform-origin: left;
+      transition: transform 0.2s linear;
+    }
   }
 
   .panel-inner {
