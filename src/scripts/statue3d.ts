@@ -31,7 +31,7 @@ import {
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { markLowPower, whenQuiet } from './scene-queue';
+import { compileWithTimeout, markLowPower, whenQuiet } from './scene-queue';
 
 type Options = {
   /** Positioned ancestor the canvas is placed in (the hero stage). */
@@ -144,12 +144,12 @@ export async function mountStatue3D({ stage, image }: Options) {
     }
   };
 
-  // Step 3 — compile the shaders in the background (no main-thread freeze where
-  // the browser supports parallel compilation), then attach the canvas.
-  layout(image.getBoundingClientRect(), stage.getBoundingClientRect());
-  await renderer.compileAsync(scene, camera);
-  await whenQuiet();
+  // Step 3 — attach the (still invisible) canvas, then compile the shaders in
+  // the background (no main-thread freeze where parallel compile is supported).
   stage.append(canvas);
+  layout(image.getBoundingClientRect(), stage.getBoundingClientRect());
+  await compileWithTimeout(() => renderer.compileAsync(scene, camera));
+  await whenQuiet();
 
   // Cursor follow (eased).
   const turn = { x: 0, y: 0, tx: 0, ty: 0 };

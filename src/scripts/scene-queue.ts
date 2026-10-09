@@ -16,6 +16,15 @@ for (const type of ['wheel', 'touchmove', 'keydown', 'scroll'] as const) {
   window.addEventListener(type, markActive, { passive: true, capture: true });
 }
 
+/**
+ * Background shader compile with a safety net: some browsers/drivers never
+ * report completion, so after `ms` we carry on anyway (worst case the first
+ * frame compiles synchronously, which is what happened before).
+ */
+export function compileWithTimeout(compile: () => Promise<unknown>, ms = 2000): Promise<unknown> {
+  return Promise.race([compile(), new Promise((resolve) => setTimeout(resolve, ms))]);
+}
+
 /** Resolves once the page has been still for `ms` and the main thread is idle. */
 export async function whenQuiet(ms = 700): Promise<void> {
   for (;;) {
@@ -41,23 +50,6 @@ export function enqueue(task: () => Promise<unknown>): Promise<unknown> {
   return run;
 }
 
-/**
- * Tiny CPU speed test (~8 ms on a typical laptop). A device more than about 3x
- * slower would stutter while preparing the 3D, so it keeps the images instead.
- */
-let cpuSlow: boolean | undefined;
-function cpuTooSlow(): boolean {
-  if (cpuSlow !== undefined) return cpuSlow;
-  const run = () => {
-    const start = performance.now();
-    let x = 0;
-    for (let i = 0; i < 1e5; i++) x += Math.sqrt(i) * Math.sin(i);
-    return x > 0 ? performance.now() - start : Infinity;
-  };
-  cpuSlow = Math.min(run(), run(), run()) > 22;
-  return cpuSlow;
-}
-
 /** True when the device looks too weak to run the live 3D smoothly. */
 export function prefersLightweight(): boolean {
   const nav = navigator as Navigator & {
@@ -67,5 +59,6 @@ export function prefersLightweight(): boolean {
   if (lowPower || nav.connection?.saveData) return true;
   if (nav.deviceMemory !== undefined && nav.deviceMemory < 4) return true;
   if (nav.hardwareConcurrency !== undefined && nav.hardwareConcurrency < 4) return true;
-  return cpuTooSlow();
+  // Anything else is judged by real frame times once the scene is running.
+  return false;
 }

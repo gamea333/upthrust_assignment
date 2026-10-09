@@ -34,7 +34,7 @@ import {
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { markLowPower, whenQuiet } from './scene-queue';
+import { compileWithTimeout, markLowPower, whenQuiet } from './scene-queue';
 
 type Options = {
   section: HTMLElement;
@@ -148,13 +148,13 @@ export async function mountTube3D({
   resize();
   window.addEventListener('resize', resize);
 
-  // Step 3: compile the shaders in the background, then attach the canvas
-  // (above the opaque grid background, below the panels).
-  await renderer.compileAsync(scene, camera);
-  await whenQuiet();
+  // Step 3: attach the (still invisible) canvas above the opaque grid and below
+  // the panels, then compile the shaders in the background.
   const grid = section.querySelector('[data-grid]');
   if (grid) grid.after(canvas);
   else section.prepend(canvas);
+  await compileWithTimeout(() => renderer.compileAsync(scene, camera));
+  await whenQuiet();
 
   // Pointer tilt (eased towards the target every frame).
   const tilt = { x: 0, y: 0, tx: 0, ty: 0 };
