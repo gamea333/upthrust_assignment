@@ -149,6 +149,34 @@ const lastCapability = hero.capabilities.length - 1;
       hero.style.setProperty('--py', '0');
     });
   }
+
+  // Live 3D statue (src/scripts/statue3d.ts). The image is the LCP element and
+  // always loads first; the 3D only downloads after the first mouse move, on
+  // desktops with a mouse, with motion allowed, WebGL available and data saver
+  // off. Lighthouse never moves the mouse, so it never loads during a test.
+  const stage = hero?.querySelector<HTMLElement>('.stage');
+  const statueImage = hero?.querySelector<HTMLElement>('.statue-img');
+  const saveData =
+    (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData ===
+    true;
+  const canWebGL = () => {
+    try {
+      return !!document.createElement('canvas').getContext('webgl2');
+    } catch {
+      return false;
+    }
+  };
+
+  if (stage && statueImage && !saveData) {
+    const load = () => {
+      if (!allowed.matches || !canWebGL()) return;
+      window.removeEventListener('pointermove', load);
+      import('../scripts/statue3d')
+        .then(({ mountStatue3D }) => mountStatue3D({ stage, image: statueImage }))
+        .catch((error) => console.warn('[statue3d] keeping the image', error));
+    };
+    window.addEventListener('pointermove', load, { passive: true });
+  }
 </script>
 
 <style>
@@ -250,6 +278,24 @@ const lastCapability = hero.capabilities.length - 1;
     display: block;
     width: 100%;
     height: auto;
+  }
+
+  /* Live 3D statue (desktop): sits exactly over the image, image fades out. */
+  .stage :global(.statue-canvas) {
+    position: absolute;
+    z-index: 2;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.6s var(--ease-out);
+  }
+
+  .stage:global(.has-3d) :global(.statue-canvas) {
+    opacity: 1;
+  }
+
+  .stage:global(.has-3d) .statue-img {
+    opacity: 0;
+    transition: opacity 0.6s var(--ease-out);
   }
 
   .performs {

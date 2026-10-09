@@ -1,0 +1,211 @@
+// Live 3D version of the hero statue (desktop with a mouse only).
+//
+// The pre-rendered statue image is the page's LCP element and always loads
+// first. This module is only downloaded after the visitor's first mouse move,
+// then draws the supplied statue GLB with the same material, lights and camera
+// framing that produced the image, so the swap is seamless. From there it
+// turns towards the cursor and its iridescent colours shift as it moves.
+//
+// Like the tube, the canvas follows the image's on-screen rectangle every frame
+// (the image keeps its parallax and float animations), the image stays as the
+// fallback, rendering pauses when the hero is off screen, and resolution drops
+// on slow GPUs.
+
+import {
+  ACESFilmicToneMapping,
+  Box3,
+  Group,
+  DirectionalLight,
+  MathUtils,
+  Mesh,
+  MeshPhysicalMaterial,
+  PerspectiveCamera,
+  PMREMGenerator,
+  PointLight,
+  Scene,
+  SRGBColorSpace,
+  Vector3,
+  WebGLRenderer,
+  type Object3D,
+} from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+
+type Options = {
+  /** Positioned ancestor the canvas is placed in (the hero stage). */
+  stage: HTMLElement;
+  /** The statue <img>; its on-screen rectangle is where the model is drawn. */
+  image: HTMLElement;
+};
+
+const FOV = 30; // same as the pre-render
+const FILL = 0.98;
+// The canvas is larger than the image so the statue can turn without its
+// shoulders being clipped at the edges.
+const PAD_X = 0.25;
+const PAD_Y = 0.08;
+
+export async function mountStatue3D({ stage, image }: Options) {
+  const canvas = document.createElement('canvas');
+  canvas.className = 'statue-canvas';
+  canvas.setAttribute('aria-hidden', 'true');
+
+  const renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true });
+  let pixelRatio = Math.min(window.devicePixelRatio, 2);
+  renderer.setPixelRatio(pixelRatio);
+  renderer.toneMapping = ACESFilmicToneMapping;
+  renderer.outputColorSpace = SRGBColorSpace;
+
+  const scene = new Scene();
+  const pmrem = new PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  pmrem.dispose();
+
+  // Lighting copied from the render that produced the fallback image.
+  const key = new DirectionalLight(0xffffff, 0.6);
+  key.position.set(-3, 4, 5);
+  scene.add(key);
+  for (const [color, x, y, z, intensity] of [
+    [0xff2fb0, 4, 1, 2, 60],
+    [0x22e0ff, -4, 2, 1, 60],
+    [0xffd400, 0, -3, 3, 40],
+    [0x6a5cff, 0, 4, -2, 50],
+  ] as const) {
+    const light = new PointLight(color, intensity, 0, 2);
+    light.position.set(x, y, z);
+    scene.add(light);
+  }
+
+  const material = new MeshPhysicalMaterial({
+    color: 0x1b2a8a,
+    metalness: 1,
+    roughness: 0.28,
+    iridescence: 1,
+    iridescenceIOR: 1.6,
+    iridescenceThicknessRange: [250, 800],
+    envMapIntensity: 0.5,
+  });
+
+  const gltf = await new GLTFLoader()
+    .setMeshoptDecoder(MeshoptDecoder)
+    .loadAsync('/models/statue.glb');
+  const model: Object3D = gltf.scene;
+  model.traverse((node) => {
+    if ((node as Mesh).isMesh) (node as Mesh).material = material;
+  });
+  // Centre the model and measure it, exactly as the pre-render did. The pivot
+  // sits at the statue's centre so it turns in place.
+  const box = new Box3().setFromObject(model);
+  const size = box.getSize(new Vector3());
+  model.position.sub(box.getCenter(new Vector3()));
+  const pivot = new Group();
+  pivot.add(model);
+  scene.add(pivot);
+
+  const camera = new PerspectiveCamera(FOV, 1, 0.01, 1000);
+  const half = MathUtils.degToRad(FOV / 2);
+
+  stage.append(canvas);
+
+  let cssW = 0;
+  let cssH = 0;
+  const layout = (rect: DOMRect, stageRect: DOMRect) => {
+    const w = rect.width * (1 + PAD_X * 2);
+    const h = rect.height * (1 + PAD_Y * 2);
+    canvas.style.left = `${rect.left - stageRect.left - rect.width * PAD_X}px`;
+    canvas.style.top = `${rect.top - stageRect.top - rect.height * PAD_Y}px`;
+    if (Math.abs(w - cssW) > 0.5 || Math.abs(h - cssH) > 0.5) {
+      cssW = w;
+      cssH = h;
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+      renderer.setSize(w, h, false);
+
+      // Frame the model for the *image* size (like the pre-render), then widen
+      // the field of view so the padded canvas shows the same model size.
+      const imageAspect = rect.width / rect.height;
+      const distH = size.y / 2 / Math.tan(half) / FILL;
+      const distW = size.x / 2 / Math.tan(half) / imageAspect / FILL;
+      camera.position.set(0, 0, Math.max(distH, distW) + size.z / 2);
+      camera.fov = MathUtils.radToDeg(2 * Math.atan(Math.tan(half) * (1 + PAD_Y * 2)));
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+  };
+
+  // Cursor follow (eased).
+  const turn = { x: 0, y: 0, tx: 0, ty: 0 };
+  const onPointer = (e: PointerEvent) => {
+    turn.tx = (e.clientX / window.innerWidth) * 2 - 1;
+    turn.ty = (e.clientY / window.innerHeight) * 2 - 1;
+  };
+  window.addEventListener('pointermove', onPointer, { passive: true });
+
+  // Adaptive quality, as in the tube.
+  let lastFrame = 0;
+  let slow = 0;
+  let sampled = 0;
+  const adapt = (now: number) => {
+    if (lastFrame) {
+      sampled++;
+      if (now - lastFrame > 22) slow++;
+      if (sampled >= 60) {
+        if (slow > 20 && pixelRatio > 1) {
+          pixelRatio = Math.max(1, pixelRatio - 0.5);
+          renderer.setPixelRatio(pixelRatio);
+          cssW = 0; // force a resize at the new ratio
+        }
+        sampled = 0;
+        slow = 0;
+      }
+    }
+    lastFrame = now;
+  };
+
+  const start = performance.now();
+  let raf = 0;
+  const render = () => {
+    raf = requestAnimationFrame(render);
+    const now = performance.now();
+    adapt(now);
+    const rect = image.getBoundingClientRect();
+    if (!rect.width) return;
+    layout(rect, stage.getBoundingClientRect());
+
+    const t = (now - start) / 1000;
+    turn.x += (turn.tx - turn.x) * 0.06;
+    turn.y += (turn.ty - turn.y) * 0.06;
+    pivot.rotation.y = turn.x * 0.45 + Math.sin(t * 0.35) * 0.08;
+    pivot.rotation.x = turn.y * 0.12;
+    // Slowly shift the iridescent sheen.
+    scene.environmentRotation.y = Math.sin(t * 0.12) * 0.9;
+    material.iridescenceThicknessRange[1] = 800 + Math.sin(t * 0.8) * 150;
+
+    renderer.render(scene, camera);
+  };
+
+  // Only render while the hero is on screen.
+  let running = false;
+  const visibility = new IntersectionObserver(([entry]) => {
+    if (entry.isIntersecting && !running) {
+      running = true;
+      lastFrame = 0;
+      raf = requestAnimationFrame(render);
+    } else if (!entry.isIntersecting && running) {
+      running = false;
+      cancelAnimationFrame(raf);
+    }
+  });
+  visibility.observe(stage);
+
+  // Swap once the first frame is on screen.
+  requestAnimationFrame(() => stage.classList.add('has-3d'));
+
+  canvas.addEventListener('webglcontextlost', () => {
+    cancelAnimationFrame(raf);
+    visibility.disconnect();
+    stage.classList.remove('has-3d');
+    canvas.remove();
+  });
+}
