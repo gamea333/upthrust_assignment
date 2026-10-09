@@ -1,5 +1,12 @@
 ---
 import Logo from '../assets/svg/logo-upthrust.svg';
+
+interface Props {
+  /** Where CONTACT US points; other pages link to the form on the home page. */
+  contactHref?: string;
+}
+
+const { contactHref = '#signup' } = Astro.props;
 ---
 
 <header class="site-header absolute inset-x-0 top-0 z-30">
@@ -9,7 +16,7 @@ import Logo from '../assets/svg/logo-upthrust.svg';
     </a>
 
     <a
-      href="#signup"
+      href={contactHref}
       data-magnetic
       class="hidden font-display text-2xl text-brand uppercase transition-colors hover:text-brand-dark lg:block"
     >
@@ -37,7 +44,7 @@ import Logo from '../assets/svg/logo-upthrust.svg';
     class="container-page hidden border-y border-grid bg-paper py-4 lg:hidden"
     aria-label="Main"
   >
-    <a href="#signup" class="font-display text-3xl text-brand uppercase" data-menu-link>
+    <a href={contactHref} class="font-display text-3xl text-brand uppercase" data-menu-link>
       Contact us
     </a>
   </nav>
