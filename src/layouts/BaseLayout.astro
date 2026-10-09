@@ -1,14 +1,18 @@
 ---
 import '../styles/global.css';
 import GoogleTagManager from '../components/GoogleTagManager.astro';
+import Seo from '../components/Seo.astro';
+import type { ImageRef } from '../lib/content';
 import { PUBLIC_GTM_ID } from 'astro:env/client';
 
 interface Props {
   title: string;
   description: string;
+  image?: ImageRef;
+  jsonLd?: Record<string, unknown>[];
 }
 
-const { title, description } = Astro.props;
+const { title, description, image, jsonLd } = Astro.props;
 const gtmId = /^GTM-[A-Z0-9]+$/.test(PUBLIC_GTM_ID ?? '') ? PUBLIC_GTM_ID : null;
 ---
 
@@ -22,9 +26,11 @@ const gtmId = /^GTM-[A-Z0-9]+$/.test(PUBLIC_GTM_ID ?? '') ? PUBLIC_GTM_ID : null
     <script is:inline>
       document.documentElement.classList.add('js');
     </script>
-    <title>{title}</title>
-    <meta name="description" content={description} />
+    <Seo title={title} description={description} image={image} jsonLd={jsonLd} />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#ff4200" />
     <GoogleTagManager />
   </head>
   <body>
