@@ -339,17 +339,26 @@ const gridVars = await gridBackgroundVars();
     .panel-inner {
       height: 100%;
       align-content: start;
-      padding: 3.5rem 1rem 2rem 0;
+      padding: 1.75rem 1rem 3rem 0;
+    }
+
+    /* Counter + swipe hint sit at the top, so they're visible as soon as the
+       section scrolls into view (at the bottom they fell below the fold). */
+    .services {
+      display: flex;
+      flex-direction: column;
     }
 
     .progress {
+      order: -1;
       position: relative;
-      z-index: 1; /* above the bottom fade (.services::after) */
+      z-index: 1;
       display: flex;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       gap: 1rem;
-      padding: 0 1rem 3.5rem;
+      /* lines up with the panel text column */
+      padding: 2.5rem 1rem 0 2rem;
       font-size: 0.8125rem;
       font-variant-numeric: tabular-nums;
       letter-spacing: 0.08em;
@@ -517,6 +526,10 @@ const gridVars = await gridBackgroundVars();
   @media (min-width: 48rem) {
     .panel {
       background-image: var(--tube-md);
+    }
+
+    .progress {
+      padding-left: 3rem;
     }
 
     .panel-inner {
