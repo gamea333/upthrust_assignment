@@ -35,7 +35,9 @@ const lastCapability = hero.capabilities.length - 1;
       </span>
     </h1>
     <!-- Decorative: outside the H1 so its text reads "Bold design that performs" -->
-    <span class="that" aria-hidden="true">That</span>
+    <span class="that" aria-hidden="true">
+      That
+    </span>
 
     <Picture
       src={statue}
@@ -276,7 +278,7 @@ const lastCapability = hero.capabilities.length - 1;
     bottom: 0;
     width: 70cqw;
     height: auto;
-    opacity: 0.5;
+    opacity: 0.35;
     pointer-events: none;
   }
 
@@ -367,20 +369,33 @@ const lastCapability = hero.capabilities.length - 1;
     font-size: 0.75rem;
   }
 
+  /* Phones: an even grid, three per row; a final row of two is centred. */
   .logos {
     grid-column: 1 / -1;
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
     align-items: center;
-    justify-content: space-around;
-    gap: 1.5rem 2rem;
-    padding: 1rem 1rem 2rem;
+    gap: 1.75rem 1rem;
+    padding: 1rem 1rem 2.5rem;
+  }
+
+  .logos li {
+    grid-column: span 2;
+    display: flex;
+    justify-content: center;
+  }
+
+  .logos li:nth-last-child(2):nth-child(3n + 1) {
+    grid-column: 2 / span 2;
   }
 
   /* Logos sit in black like the design; hovering shows the brand's own colours. */
+  /* Each logo fits the same box, so wide and compact marks look balanced. */
   .logo {
     width: auto;
-    height: 1.25rem;
+    height: auto;
+    max-width: 100%;
+    max-height: 1.375rem;
     filter: brightness(0);
     transition:
       filter 0.4s var(--ease-out),
@@ -403,8 +418,20 @@ const lastCapability = hero.capabilities.length - 1;
       font-size: 1.75rem;
     }
 
+    .logos {
+      display: flex;
+      flex-wrap: nowrap;
+      justify-content: space-around;
+      gap: 2rem;
+    }
+
+    .logos li {
+      grid-column: auto;
+    }
+
     .logo {
       height: 1.5rem;
+      max-height: none;
     }
   }
 
@@ -488,6 +515,7 @@ const lastCapability = hero.capabilities.length - 1;
       bottom: auto;
       top: 40cqw;
       width: 40cqw;
+      opacity: 0.5;
     }
 
     .proof {
