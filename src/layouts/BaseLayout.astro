@@ -10,9 +10,10 @@ interface Props {
   description: string;
   image?: ImageRef;
   jsonLd?: Record<string, unknown>[];
+  noindex?: boolean;
 }
 
-const { title, description, image, jsonLd } = Astro.props;
+const { title, description, image, jsonLd, noindex } = Astro.props;
 const gtmId = /^GTM-[A-Z0-9]+$/.test(PUBLIC_GTM_ID ?? '') ? PUBLIC_GTM_ID : null;
 ---
 
@@ -26,7 +27,7 @@ const gtmId = /^GTM-[A-Z0-9]+$/.test(PUBLIC_GTM_ID ?? '') ? PUBLIC_GTM_ID : null
     <script is:inline>
       document.documentElement.classList.add('js');
     </script>
-    <Seo title={title} description={description} image={image} jsonLd={jsonLd} />
+    <Seo title={title} description={description} image={image} jsonLd={jsonLd} noindex={noindex} />
     <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

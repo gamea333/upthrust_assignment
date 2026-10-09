@@ -1,0 +1,28 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+---
+
+<BaseLayout
+  title="Page not found — Upthrust Design"
+  description="This page doesn't exist. Head back to Upthrust Design."
+  noindex
+>
+  <Header slot="header" contactHref="/#signup" />
+  <section class="container-page flex min-h-svh flex-col items-start justify-center py-32">
+    <p class="font-display text-[clamp(6rem,25vw,16rem)] leading-none text-brand">404</p>
+    <h1 class="mt-4 text-3xl font-semibold tracking-tight md:text-5xl">
+      This page went off-brief.
+    </h1>
+    <p class="mt-4 max-w-md text-neutral-700">
+      The link may be broken or the page may have moved. The good stuff is on the home page.
+    </p>
+    <a
+      href="/"
+      data-magnetic
+      class="mt-8 inline-block bg-ink px-5 py-3 font-bold text-paper uppercase transition-colors hover:bg-brand"
+    >
+      Back to home
+    </a>
+  </section>
+</BaseLayout>
