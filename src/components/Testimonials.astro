@@ -1,0 +1,108 @@
+---
+// Client quotes, managed in Sanity. The design has no testimonials section, so
+// this only renders once at least one testimonial is published, styled to sit
+// between services and the FAQ in the same black visual language.
+import { getContent } from '../lib/content';
+
+const { testimonials, testimonialsTitle } = await getContent();
+---
+
+{testimonials.length > 0 && (
+  <section class="testimonials" aria-labelledby="testimonials-title">
+    <div class="container-page">
+      <h2 id="testimonials-title" class="title" data-reveal>
+        {testimonialsTitle}
+      </h2>
+      <ul class="list">
+        {testimonials.map((item, i) => (
+          <li data-reveal style={`--i: ${i + 1}`}>
+            <figure>
+              <blockquote>
+                <p>{item.quote}</p>
+              </blockquote>
+              <figcaption>
+                <strong>{item.name}</strong>
+                {(item.role || item.company) && (
+                  <span>{[item.role, item.company].filter(Boolean).join(', ')}</span>
+                )}
+              </figcaption>
+            </figure>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+)}
+
+<style>
+  .testimonials {
+    background: var(--color-ink);
+    color: var(--color-paper);
+    padding-block: 4rem 1rem;
+  }
+
+  .title {
+    font-size: clamp(2.25rem, 6vw, 4.5rem);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+
+  .list {
+    display: grid;
+    gap: 1rem;
+    margin-top: 2.5rem;
+  }
+
+  figure {
+    display: grid;
+    gap: 1.5rem;
+    height: 100%;
+    padding: 1.75rem;
+    border: 1px solid #333;
+    border-radius: 0.75rem;
+    transition: border-color 0.3s var(--ease-out);
+  }
+
+  li:hover figure {
+    border-color: var(--color-brand);
+  }
+
+  blockquote p {
+    font-size: 1.125rem;
+    line-height: 1.5;
+  }
+
+  blockquote p::before {
+    content: '“';
+    color: var(--color-brand);
+  }
+
+  blockquote p::after {
+    content: '”';
+    color: var(--color-brand);
+  }
+
+  figcaption {
+    align-self: end;
+    display: grid;
+    gap: 0.125rem;
+    font-size: 0.875rem;
+  }
+
+  figcaption span {
+    color: #bdbdbd;
+  }
+
+  @media (min-width: 48rem) {
+    .list {
+      grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .testimonials {
+      padding-block: 7rem 1rem;
+    }
+  }
+</style>

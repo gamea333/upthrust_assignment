@@ -1,5 +1,6 @@
-// Page content. Phase 7 swaps this for Sanity queries; the shape stays the same
-// so components don't need to change.
+// Bundled fallback content. The live content is edited in Sanity and read by
+// src/lib/content.ts; this copy is only used when Sanity is unreachable or a
+// section is empty, so a deploy can never ship a blank page.
 
 import zomato from '../assets/logos/zomato.png';
 import bosch from '../assets/logos/bosch.png';
@@ -10,6 +11,14 @@ import service1 from '../assets/images/service-1.png';
 import service2 from '../assets/images/service-2.png';
 import service3 from '../assets/images/service-3.png';
 import service4 from '../assets/images/service-4.png';
+
+export const settings = {
+  title: 'Upthrust Design — Bold design that performs',
+  description:
+    'Upthrust is a strategy-led design studio for brand identity, digital products and campaigns.',
+};
+
+export const testimonialsTitle = 'What clients say';
 
 export const hero = {
   headline: 'Bold design that performs',
