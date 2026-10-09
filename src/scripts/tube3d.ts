@@ -34,7 +34,7 @@ import {
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { compileWithTimeout, markLowPower, whenQuiet } from './scene-queue';
+import { compileWithTimeout, whenQuiet } from './scene-queue';
 
 type Options = {
   section: HTMLElement;
@@ -168,40 +168,22 @@ export async function mountTube3D({
   let tip = 0; // eased, in CSS px from the left edge (starts hidden, grows in)
   const start = performance.now();
 
-  // Adaptive quality: if frames average slower than ~45 fps for a second,
-  // render at a lower resolution; if it is still slow at 1x, this device is
-  // better off with the image, so hand back to it.
+  // Adaptive quality: if frames are slow, render at a lower resolution
+  // (down to 0.75x). It never switches itself off; only a GPU crash
+  // (webglcontextlost) hands back to the image.
   let lastFrame = 0;
   let slowFrames = 0;
   let sampled = 0;
-  // Quick check: skip the first frames (GPU warm-up), then if the typical frame
-  // is slower than ~35 fps this device is better off with the images, so hand
-  // back to the image and skip any other 3D scene too.
-  const early: number[] = [];
+  const warmUpUntil = performance.now() + 2500;
   const adaptQuality = (now: number) => {
-    if (lastFrame && early.length < 40) {
-      early.push(now - lastFrame);
-      if (early.length === 40) {
-        const settled = early.slice(10).sort((a, b) => a - b);
-        if (settled[15] > 28) {
-          markLowPower();
-          queueMicrotask(destroy);
-          return;
-        }
-      }
-    }
-    if (lastFrame) {
+    if (lastFrame && now > warmUpUntil) {
       sampled++;
       if (now - lastFrame > 22) slowFrames++;
       if (sampled >= 60) {
-        if (slowFrames > 20) {
-          if (pixelRatio > 1) {
-            pixelRatio = Math.max(1, pixelRatio - 0.5);
-            renderer.setPixelRatio(pixelRatio);
-            renderer.setSize(width, height, false);
-          } else {
-            queueMicrotask(destroy);
-          }
+        if (slowFrames > 20 && pixelRatio > 0.75) {
+          pixelRatio = Math.max(0.75, pixelRatio - 0.25);
+          renderer.setPixelRatio(pixelRatio);
+          renderer.setSize(width, height, false);
         }
         sampled = 0;
         slowFrames = 0;

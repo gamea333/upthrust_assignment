@@ -35,10 +35,6 @@ export async function whenQuiet(ms = 700): Promise<void> {
   await idle();
 }
 
-// Set when a 3D scene proved too slow on this device; later scenes are skipped.
-let lowPower = false;
-export const markLowPower = () => (lowPower = true);
-
 let chain: Promise<unknown> = Promise.resolve();
 
 /** Queue a setup task; it starts once earlier tasks finish and the page is quiet. */
@@ -56,7 +52,7 @@ export function prefersLightweight(): boolean {
     deviceMemory?: number;
     connection?: { saveData?: boolean };
   };
-  if (lowPower || nav.connection?.saveData) return true;
+  if (nav.connection?.saveData) return true;
   if (nav.deviceMemory !== undefined && nav.deviceMemory < 4) return true;
   if (nav.hardwareConcurrency !== undefined && nav.hardwareConcurrency < 4) return true;
   // Anything else is judged by real frame times once the scene is running.
