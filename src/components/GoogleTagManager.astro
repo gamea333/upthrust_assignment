@@ -1,0 +1,39 @@
+---
+// Google Tag Manager, loaded so it doesn't cost page speed:
+// - dataLayer is created inline straight away, so events pushed early (like
+//   form_submit) are queued, never lost.
+// - gtm.js itself (~100 KB) loads once the page has finished loading and the
+//   browser is idle, so it never competes with the hero or blocks the main
+//   thread during load.
+// Renders nothing if no valid container id is configured.
+import { PUBLIC_GTM_ID } from 'astro:env/client';
+
+const gtmId = /^GTM-[A-Z0-9]+$/.test(PUBLIC_GTM_ID ?? '') ? PUBLIC_GTM_ID : null;
+---
+
+{gtmId && <script is:inline define:vars={{ gtmId }}>
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({ 'gtm.start': Date.now(), event: 'gtm.js' });
+
+  function loadGtm() {
+    if (window.__gtmLoaded) return;
+    window.__gtmLoaded = true;
+    var script = document.createElement('script');
+    script.async = true;
+    script.src = 'https://www.googletagmanager.com/gtm.js?id=' + gtmId;
+    document.head.appendChild(script);
+  }
+
+  function scheduleGtm() {
+    if ('requestIdleCallback' in window) requestIdleCallback(loadGtm, { timeout: 3000 });
+    else setTimeout(loadGtm, 1500);
+  }
+
+  if (document.readyState === 'complete') scheduleGtm();
+  else window.addEventListener('load', scheduleGtm, { once: true });
+
+  // If someone interacts before then, load right away so nothing is missed.
+  ['pointerdown', 'keydown', 'scroll'].forEach(function (type) {
+    window.addEventListener(type, loadGtm, { once: true, passive: true });
+  });
+</script>}

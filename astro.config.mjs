@@ -19,7 +19,13 @@ export default defineConfig({
     schema: {
       SUPABASE_URL: envField.string({ context: 'server', access: 'secret', url: true }),
       SUPABASE_SERVICE_ROLE_KEY: envField.string({ context: 'server', access: 'secret' }),
-      PUBLIC_GTM_ID: envField.string({ context: 'client', access: 'public', optional: true }),
+      // Google Tag Manager container. Public by design (it's in the page source anyway);
+      // override per environment in Vercel if needed.
+      PUBLIC_GTM_ID: envField.string({
+        context: 'client',
+        access: 'public',
+        default: 'GTM-K7FCMLW3',
+      }),
     },
   },
 
