@@ -4,37 +4,38 @@ Production build of the Upthrust landing page from the supplied Figma design and
 
 ## Links
 
-| | |
-|---|---|
-| **Live site** | https://upthrust-assignment-rho.vercel.app |
-| **Repository** | https://github.com/gamea333/upthrust_assignment |
-| **CMS (Sanity Studio)** | https://upthrust-design.sanity.studio (login required) |
-| **PageSpeed: mobile** | [95 / 100 / 100 / 100](https://pagespeed.web.dev/analysis/https-upthrust-assignment-rho-vercel-app/x99ar385e5?form_factor=mobile) (Performance / Accessibility / Best Practices / SEO) |
-| **PageSpeed: desktop** | [100 / 100 / 100 / 100](https://pagespeed.web.dev/analysis/https-upthrust-assignment-rho-vercel-app/x0id8lwfoj?form_factor=desktop) |
-| **Structured data** | [Schema.org validator](https://validator.schema.org/#url=https%3A%2F%2Fupthrust-assignment-rho.vercel.app%2F) · [Google Rich Results Test](https://search.google.com/test/rich-results?url=https%3A%2F%2Fupthrust-assignment-rho.vercel.app%2F) |
-| **Social preview (Open Graph)** | [opengraph.xyz](https://www.opengraph.xyz/url/https%3A%2F%2Fupthrust-assignment-rho.vercel.app%2F) |
-| **Google Tag Manager** | Container `GTM-K7FCMLW3` (verified with Tag Assistant, see below) |
-| **Form submissions** | Supabase table `newsletter_signups` (shown live; the dashboard is private) |
+|                                 |                                                                                                                                                                                                                                                 |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Live site**                   | https://upthrust-assignment-rho.vercel.app                                                                                                                                                                                                      |
+| **Repository**                  | https://github.com/gamea333/upthrust_assignment                                                                                                                                                                                                 |
+| **CMS (Sanity Studio)**         | https://upthrust-design.sanity.studio (login required)                                                                                                                                                                                          |
+| **PageSpeed: mobile**           | [95 / 100 / 100 / 100](https://pagespeed.web.dev/analysis/https-upthrust-assignment-rho-vercel-app/x99ar385e5?form_factor=mobile) (Performance / Accessibility / Best Practices / SEO)                                                          |
+| **PageSpeed: desktop**          | [100 / 100 / 100 / 100](https://pagespeed.web.dev/analysis/https-upthrust-assignment-rho-vercel-app/x0id8lwfoj?form_factor=desktop)                                                                                                             |
+| **Structured data**             | [Schema.org validator](https://validator.schema.org/#url=https%3A%2F%2Fupthrust-assignment-rho.vercel.app%2F) · [Google Rich Results Test](https://search.google.com/test/rich-results?url=https%3A%2F%2Fupthrust-assignment-rho.vercel.app%2F) |
+| **Social preview (Open Graph)** | [opengraph.xyz](https://www.opengraph.xyz/url/https%3A%2F%2Fupthrust-assignment-rho.vercel.app%2F)                                                                                                                                              |
+| **Google Tag Manager**          | Container `GTM-K7FCMLW3` (verified with Tag Assistant, see below)                                                                                                                                                                               |
+| **Form submissions**            | Supabase table `newsletter_signups` (shown live; the dashboard is private)                                                                                                                                                                      |
 
 PageSpeed scores move a few points between runs. Mobile has scored 93–97 in every run since launch, against a target of 85.
 
-| Mobile PageSpeed | Desktop PageSpeed |
-|---|---|
+| Mobile PageSpeed                                          | Desktop PageSpeed                                           |
+| --------------------------------------------------------- | ----------------------------------------------------------- |
 | ![Mobile PageSpeed](.github/readme/pagespeed-mobile.webp) | ![Desktop PageSpeed](.github/readme/pagespeed-desktop.webp) |
 
 ## Stack and why
 
-| Layer | Choice | Why |
-|---|---|---|
-| Framework | **Astro 7** (static output, TypeScript) | It's a content page, so it ships as pre-rendered HTML with almost no JS by default. All content is in the HTML for SEO, and the page loads fast. Only the form endpoint runs on the server. |
-| Styling | **Tailwind CSS v4** + scoped component CSS | Design tokens (colours, fonts, breakpoints) live in one `@theme` block. Complex layouts are written as plain CSS next to their component. |
-| Motion | **GSAP + ScrollTrigger**, **Lenis**, **three.js** | GSAP pins the services section and scrolls it sideways, Lenis smooths desktop scrolling, and three.js renders the supplied 3D models live. All of it is desktop-only and lazy-loaded. |
-| CMS | **Sanity** | A headless CMS with a structured content model and an editor-friendly Studio. The site reads it at build time, so there's no CMS cost at page load. |
-| Backend | **Vercel serverless function** + **Supabase (Postgres)** | One endpoint, `/api/subscribe`, validates the form and stores it in a locked-down table. Supabase gives a real database with a table viewer to demonstrate. |
-| Tracking | **Google Tag Manager** | The site pushes events to the dataLayer, and marketing configures tags in GTM without code changes. |
-| Hosting | **Vercel** | Preview deployments for every PR and production deploys from `main`. |
+| Layer     | Choice                                                   | Why                                                                                                                                                                                         |
+| --------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Framework | **Astro 7** (static output, TypeScript)                  | It's a content page, so it ships as pre-rendered HTML with almost no JS by default. All content is in the HTML for SEO, and the page loads fast. Only the form endpoint runs on the server. |
+| Styling   | **Tailwind CSS v4** + scoped component CSS               | Design tokens (colours, fonts, breakpoints) live in one `@theme` block. Complex layouts are written as plain CSS next to their component.                                                   |
+| Motion    | **GSAP + ScrollTrigger**, **Lenis**, **three.js**        | GSAP pins the services section and scrolls it sideways, Lenis smooths desktop scrolling, and three.js renders the supplied 3D models live. All of it is desktop-only and lazy-loaded.       |
+| CMS       | **Sanity**                                               | A headless CMS with a structured content model and an editor-friendly Studio. The site reads it at build time, so there's no CMS cost at page load.                                         |
+| Backend   | **Vercel serverless function** + **Supabase (Postgres)** | One endpoint, `/api/subscribe`, validates the form and stores it in a locked-down table. Supabase gives a real database with a table viewer to demonstrate.                                 |
+| Tracking  | **Google Tag Manager**                                   | The site pushes events to the dataLayer, and marketing configures tags in GTM without code changes.                                                                                         |
+| Hosting   | **Vercel**                                               | Preview deployments for every PR and production deploys from `main`.                                                                                                                        |
 
 **Trade-offs considered**
+
 - **Next.js** would also work, but it ships a React runtime this page doesn't need. Astro's static-first output made the performance target easy to hit.
 - **Live 3D** was the riskiest choice. The pre-rendered images always load first and are what PageSpeed measures; the 3D is an enhancement layered on top.
 - **Formspree or Netlify Forms** would be quicker, but they're a black box. A real endpoint and database show how forms are actually processed.
@@ -82,15 +83,15 @@ Studio: `cd studio && npm install && npm run dev` (http://localhost:3333).
 
 Content lives in Sanity. An editor logs into **https://upthrust-design.sanity.studio**, changes something and clicks **Publish**. A Sanity webhook calls a Vercel deploy hook, and the live site rebuilds with the change in about a minute.
 
-| Studio section | Controls |
-|---|---|
-| Site settings | Page title, meta description, social share image, section headings |
-| Hero | H1 text, the two hand-marked notes, capabilities list, "100+" proof line |
-| Client logos | Logo strip (add, remove, drag to reorder) |
-| Services | The four panels: title, intro, bullets, note, collage image and alt text |
-| FAQs | Questions and answers (also feed the FAQ structured data) |
-| Testimonials | Client quotes; the section appears on the page once one is published |
-| Footer | Wordmark, site links, tagline, newsletter form copy, social links |
+| Studio section | Controls                                                                 |
+| -------------- | ------------------------------------------------------------------------ |
+| Site settings  | Page title, meta description, social share image, section headings       |
+| Hero           | H1 text, the two hand-marked notes, capabilities list, "100+" proof line |
+| Client logos   | Logo strip (add, remove, drag to reorder)                                |
+| Services       | The four panels: title, intro, bullets, note, collage image and alt text |
+| FAQs           | Questions and answers (also feed the FAQ structured data)                |
+| Testimonials   | Client quotes; the section appears on the page once one is published     |
+| Footer         | Wordmark, site links, tagline, newsletter form copy, social links        |
 
 **Content model.** Site settings, Hero and Footer are single documents that can't be duplicated or deleted. Logos, Services, FAQs and Testimonials are lists ordered by drag and drop. The site fetches everything in **one GROQ query at build time** (`src/lib/sanity.ts`). If Sanity is unreachable or a section is empty, that section falls back to `src/content/site.ts`, so a deploy never ships a blank page. CMS images are downloaded and optimised (AVIF/WebP, responsive sizes) exactly like local ones.
 
@@ -112,27 +113,29 @@ Footer form ──► client validation ──► POST /api/subscribe (Vercel fu
 - **GTM:** a Custom Event trigger on `form_submit` fires the conversion tag. GTM loads after the page has finished loading, so it doesn't affect Core Web Vitals.
 
 **Verifying tracking:**
+
 1. Open GTM, click **Preview** and connect to the live site.
 2. Submit the form.
 3. In Tag Assistant, `form_submit` appears with the tag fired and the dataLayer payload.
 
 You can also type `dataLayer` in the browser console after submitting.
 
-| Tag fired on `form_submit` | dataLayer payload |
-|---|---|
+| Tag fired on `form_submit`                                     | dataLayer payload                                              |
+| -------------------------------------------------------------- | -------------------------------------------------------------- |
 | ![Tag Assistant: tag fired](.github/readme/gtm-tag-fired.webp) | ![Tag Assistant: dataLayer](.github/readme/gtm-datalayer.webp) |
 
 ## Integrations and environment variables
 
-| Service | Used for | Configured in |
-|---|---|---|
-| Vercel | Hosting, previews, serverless function | Git integration; env vars in Vercel → Settings → Environments |
-| Sanity | CMS content and images | `studio/`; project `1rk7384s`, dataset `production` (public read) |
-| Sanity → Vercel webhook | Rebuild on publish | Sanity API webhook → Vercel deploy hook (secret URL, not in the repo) |
-| Supabase | Form storage | `supabase/schema.sql`; URL and secret key in env vars |
-| Google Tag Manager | Event tracking | Container `GTM-K7FCMLW3` |
+| Service                 | Used for                               | Configured in                                                         |
+| ----------------------- | -------------------------------------- | --------------------------------------------------------------------- |
+| Vercel                  | Hosting, previews, serverless function | Git integration; env vars in Vercel → Settings → Environments         |
+| Sanity                  | CMS content and images                 | `studio/`; project `1rk7384s`, dataset `production` (public read)     |
+| Sanity → Vercel webhook | Rebuild on publish                     | Sanity API webhook → Vercel deploy hook (secret URL, not in the repo) |
+| Supabase                | Form storage                           | `supabase/schema.sql`; URL and secret key in env vars                 |
+| Google Tag Manager      | Event tracking                         | Container `GTM-K7FCMLW3`                                              |
 
 Environment variables are declared with Astro's typed `astro:env` schema (`astro.config.mjs`):
+
 - `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are **server-only secrets**. Astro refuses to import them into client code, they're read at runtime, and they're set in `.env` locally and in Vercel for Production and Preview.
 - `PUBLIC_GTM_ID`, `PUBLIC_SANITY_PROJECT_ID` and `PUBLIC_SANITY_DATASET` are public values with safe defaults.
 
@@ -141,6 +144,7 @@ Environment variables are declared with Astro's typed `astro:env` schema (`astro
 ## Performance, SEO and accessibility
 
 **Performance**
+
 - The hero image is the LCP element: AVIF/WebP, responsive sizes, high fetch priority.
 - Everything below the fold is lazy-loaded, and background images load only when near the viewport.
 - Fonts are self-hosted.
@@ -149,6 +153,7 @@ Environment variables are declared with Astro's typed `astro:env` schema (`astro
 - GTM loads after the page has finished loading.
 
 **SEO**
+
 - Unique title and description, editable in the CMS.
 - **Exactly one H1** with an H2/H3 hierarchy.
 - Canonical URL, Open Graph and Twitter card with a 1200×630 image.
@@ -157,6 +162,7 @@ Environment variables are declared with Astro's typed `astro:env` schema (`astro
 - All content is in the server-rendered HTML.
 
 **Accessibility**
+
 - Skip link, semantic landmarks, alt text on every meaningful image (decorative images are hidden).
 - Visible focus rings; all interactions work by keyboard.
 - The mobile menu traps focus, closes on Esc and returns focus to its button.
@@ -164,8 +170,8 @@ Environment variables are declared with Astro's typed `astro:env` schema (`astro
 - Readable contrast.
 - `prefers-reduced-motion` turns off every animation and all 3D.
 
-| SEO structured data | Social share preview |
-|---|---|
+| SEO structured data                                       | Social share preview                                         |
+| --------------------------------------------------------- | ------------------------------------------------------------ |
 | ![Schema validator](.github/readme/schema-validator.webp) | ![Open Graph preview](.github/readme/opengraph-preview.webp) |
 
 ## Responsive behaviour and design decisions
@@ -180,8 +186,8 @@ The Figma file is desktop-only, so the tablet and mobile layouts are my own adap
   - a full-screen mobile menu;
   - a privacy page and a 404 page.
 
-| 375 px | 768 px |
-|---|---|
+| 375 px                                                                         | 768 px                                                                         |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
 | <img src=".github/readme/responsive-375.webp" width="260" alt="Mobile layout"> | <img src=".github/readme/responsive-768.webp" width="360" alt="Tablet layout"> |
 
 ## Updating the site safely after launch
