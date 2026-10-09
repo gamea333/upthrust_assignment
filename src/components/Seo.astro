@@ -1,0 +1,73 @@
+---
+// Everything search engines and social platforms read from <head>.
+// Title and description come from Sanity (Site settings) on the home page; the
+// share image falls back to /og-image.jpg when none is set in the CMS.
+import { getImage } from 'astro:assets';
+import type { ImageRef } from '../lib/content';
+
+interface Props {
+  title: string;
+  description: string;
+  image?: ImageRef;
+  imageAlt?: string;
+  type?: 'website' | 'article';
+  /** Structured data objects, rendered as one JSON-LD graph. */
+  jsonLd?: Record<string, unknown>[];
+}
+
+const {
+  title,
+  description,
+  image,
+  imageAlt = 'Upthrust: Bold design that performs',
+  type = 'website',
+  jsonLd = [],
+} = Astro.props;
+
+const site = Astro.site ?? new URL(Astro.url.origin);
+// Canonical: always the production domain, no query string, trailing slash as served.
+const canonical = new URL(Astro.url.pathname, site).href;
+
+// Social images must be absolute URLs, 1200x630 works everywhere.
+let ogImage = new URL('/og-image.jpg', site).href;
+const ogWidth = 1200;
+const ogHeight = 630;
+if (image) {
+  const resized = await getImage({
+    src: 'format' in image ? image : image.src,
+    width: 1200,
+    height: 630,
+    fit: 'cover',
+    format: 'jpg',
+  });
+  ogImage = new URL(resized.src, site).href;
+}
+
+const graph = jsonLd.length
+  ? JSON.stringify({ '@context': 'https://schema.org', '@graph': jsonLd }).replace(/</g, '\\u003c')
+  : null;
+---
+
+<title>{title}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonical} />
+<meta name="robots" content="index, follow, max-image-preview:large" />
+
+<meta property="og:type" content={type} />
+<meta property="og:site_name" content="Upthrust Design" />
+<meta property="og:locale" content="en_GB" />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonical} />
+<meta property="og:image" content={ogImage} />
+<meta property="og:image:width" content={String(ogWidth)} />
+<meta property="og:image:height" content={String(ogHeight)} />
+<meta property="og:image:alt" content={imageAlt} />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={ogImage} />
+<meta name="twitter:image:alt" content={imageAlt} />
+
+{graph && <script is:inline type="application/ld+json" set:html={graph} />}
