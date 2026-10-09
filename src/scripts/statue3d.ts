@@ -31,6 +31,7 @@ import {
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { markLowPower, whenQuiet } from './scene-queue';
 
 type Options = {
   /** Positioned ancestor the canvas is placed in (the hero stage). */
@@ -47,15 +48,29 @@ const PAD_X = 0.25;
 const PAD_Y = 0.08;
 
 export async function mountStatue3D({ stage, image }: Options) {
+  // Step 1 — fetch and decode the model. Meshopt decoding runs in web workers,
+  // off the main thread.
+  MeshoptDecoder.useWorkers?.(2);
+  const gltf = await new GLTFLoader()
+    .setMeshoptDecoder(MeshoptDecoder)
+    .loadAsync('/models/statue.glb');
+  await whenQuiet();
+
+  // Step 2 — renderer, environment and lights (short GPU work), in an idle slot.
   const canvas = document.createElement('canvas');
   canvas.className = 'statue-canvas';
   canvas.setAttribute('aria-hidden', 'true');
 
   const renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true });
-  let pixelRatio = Math.min(window.devicePixelRatio, 2);
+  // 1.5x is visually indistinguishable here and much cheaper than 2x.
+  let pixelRatio = Math.min(window.devicePixelRatio, 1.5);
   renderer.setPixelRatio(pixelRatio);
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.outputColorSpace = SRGBColorSpace;
+  // Don't ask the GPU "did that shader compile?" after every compile: that
+  // forces the main thread to wait for the GPU (hundreds of ms of freeze) and
+  // defeats background compilation. These shaders are fixed and known-good.
+  renderer.debug.checkShaderErrors = false;
 
   const scene = new Scene();
   const pmrem = new PMREMGenerator(renderer);
@@ -87,9 +102,6 @@ export async function mountStatue3D({ stage, image }: Options) {
     envMapIntensity: 0.5,
   });
 
-  const gltf = await new GLTFLoader()
-    .setMeshoptDecoder(MeshoptDecoder)
-    .loadAsync('/models/statue.glb');
   const model: Object3D = gltf.scene;
   model.traverse((node) => {
     if ((node as Mesh).isMesh) (node as Mesh).material = material;
@@ -105,8 +117,6 @@ export async function mountStatue3D({ stage, image }: Options) {
 
   const camera = new PerspectiveCamera(FOV, 1, 0.01, 1000);
   const half = MathUtils.degToRad(FOV / 2);
-
-  stage.append(canvas);
 
   let cssW = 0;
   let cssH = 0;
@@ -134,6 +144,13 @@ export async function mountStatue3D({ stage, image }: Options) {
     }
   };
 
+  // Step 3 — compile the shaders in the background (no main-thread freeze where
+  // the browser supports parallel compilation), then attach the canvas.
+  layout(image.getBoundingClientRect(), stage.getBoundingClientRect());
+  await renderer.compileAsync(scene, camera);
+  await whenQuiet();
+  stage.append(canvas);
+
   // Cursor follow (eased).
   const turn = { x: 0, y: 0, tx: 0, ty: 0 };
   const onPointer = (e: PointerEvent) => {
@@ -142,19 +159,57 @@ export async function mountStatue3D({ stage, image }: Options) {
   };
   window.addEventListener('pointermove', onPointer, { passive: true });
 
-  // Adaptive quality, as in the tube.
+  let raf = 0;
+  let running = false;
+  let visibility: IntersectionObserver | undefined;
+
+  // Back to the image for good (weak GPU, lost context).
+  const destroy = () => {
+    cancelAnimationFrame(raf);
+    running = false;
+    visibility?.disconnect();
+    window.removeEventListener('pointermove', onPointer);
+    stage.classList.remove('has-3d');
+    setTimeout(() => {
+      canvas.remove();
+      renderer.dispose();
+      material.dispose();
+    }, 700); // after the cross-fade back
+  };
+
+  // Adaptive quality: step the resolution down if frames are slow; if it is
+  // still slow at 1x, this device is better off with the image.
   let lastFrame = 0;
   let slow = 0;
   let sampled = 0;
+  // Quick check: skip the first frames (GPU warm-up), then if the typical frame
+  // is slower than ~35 fps this device is better off with the images, so hand
+  // back to the image and skip any other 3D scene too.
+  const early: number[] = [];
   const adapt = (now: number) => {
+    if (lastFrame && early.length < 40) {
+      early.push(now - lastFrame);
+      if (early.length === 40) {
+        const settled = early.slice(10).sort((a, b) => a - b);
+        if (settled[15] > 28) {
+          markLowPower();
+          destroy();
+          return;
+        }
+      }
+    }
     if (lastFrame) {
       sampled++;
       if (now - lastFrame > 22) slow++;
       if (sampled >= 60) {
-        if (slow > 20 && pixelRatio > 1) {
-          pixelRatio = Math.max(1, pixelRatio - 0.5);
-          renderer.setPixelRatio(pixelRatio);
-          cssW = 0; // force a resize at the new ratio
+        if (slow > 20) {
+          if (pixelRatio > 1) {
+            pixelRatio = Math.max(1, pixelRatio - 0.5);
+            renderer.setPixelRatio(pixelRatio);
+            cssW = 0; // force a resize at the new ratio
+          } else {
+            destroy();
+          }
         }
         sampled = 0;
         slow = 0;
@@ -164,8 +219,8 @@ export async function mountStatue3D({ stage, image }: Options) {
   };
 
   const start = performance.now();
-  let raf = 0;
   const render = () => {
+    if (!running) return;
     raf = requestAnimationFrame(render);
     const now = performance.now();
     adapt(now);
@@ -186,8 +241,7 @@ export async function mountStatue3D({ stage, image }: Options) {
   };
 
   // Only render while the hero is on screen.
-  let running = false;
-  const visibility = new IntersectionObserver(([entry]) => {
+  visibility = new IntersectionObserver(([entry]) => {
     if (entry.isIntersecting && !running) {
       running = true;
       lastFrame = 0;
@@ -199,13 +253,8 @@ export async function mountStatue3D({ stage, image }: Options) {
   });
   visibility.observe(stage);
 
-  // Swap once the first frame is on screen.
-  requestAnimationFrame(() => stage.classList.add('has-3d'));
+  // Swap once a real frame has been drawn.
+  requestAnimationFrame(() => requestAnimationFrame(() => stage.classList.add('has-3d')));
 
-  canvas.addEventListener('webglcontextlost', () => {
-    cancelAnimationFrame(raf);
-    visibility.disconnect();
-    stage.classList.remove('has-3d');
-    canvas.remove();
-  });
+  canvas.addEventListener('webglcontextlost', destroy);
 }

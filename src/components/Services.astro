@@ -224,38 +224,38 @@ const gridVars = await gridBackgroundVars();
         };
         track.addEventListener('focusin', onFocus);
 
-        // Live 3D tube (see src/scripts/tube3d.ts). Loaded only after the visitor
-        // starts scrolling and the section is about a screen away, so page-load
-        // metrics never include it. If WebGL is missing the image simply stays.
+        // Live 3D tube (see src/scripts/tube3d.ts). Prepared after the visitor's
+        // first interaction, in idle time and after the hero statue (shared
+        // queue), so it's ready before they reach this section and its setup
+        // never lands mid-scroll. Page-load metrics never include it; without
+        // WebGL, or on weak devices, the image simply stays.
         const tubeImage = section.querySelector<HTMLElement>('[data-tube]');
         let unmountTube: (() => void) | undefined;
         let cancelled = false;
-        const near = new IntersectionObserver(
-          async ([entry]) => {
-            if (!entry.isIntersecting || !tubeImage || !hasWebGL()) return;
-            near.disconnect();
-            const { mountTube3D } = await import('../scripts/tube3d');
+        const interactions = ['scroll', 'pointermove', 'keydown'] as const;
+        const start = async () => {
+          interactions.forEach((type) => window.removeEventListener(type, start));
+          if (!tubeImage || !hasWebGL()) return;
+          const { enqueue } = await import('../scripts/scene-queue');
+          enqueue(async () => {
             if (cancelled) return;
+            const { mountTube3D } = await import('../scripts/tube3d');
             unmountTube = await mountTube3D({
               section,
               image: tubeImage,
               getProgress: () => tween.scrollTrigger?.progress ?? 0,
               addTicker: (fn) => gsap.ticker.add(fn),
               removeTicker: (fn) => gsap.ticker.remove(fn),
-            }).catch((error) => {
-              console.warn('[tube3d] falling back to the image', error);
-              return undefined;
             });
-          },
-          { rootMargin: '0px 0px 100% 0px' },
+          }).catch((error) => console.warn('[tube3d] falling back to the image', error));
+        };
+        interactions.forEach((type) =>
+          window.addEventListener(type, start, { once: true, passive: true }),
         );
-        const startWatching = () => near.observe(section);
-        window.addEventListener('scroll', startWatching, { once: true, passive: true });
 
         return () => {
           cancelled = true;
-          near.disconnect();
-          window.removeEventListener('scroll', startWatching);
+          interactions.forEach((type) => window.removeEventListener(type, start));
           unmountTube?.();
           track.removeEventListener('focusin', onFocus);
         };

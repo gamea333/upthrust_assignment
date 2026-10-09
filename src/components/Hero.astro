@@ -168,12 +168,16 @@ const lastCapability = hero.capabilities.length - 1;
   };
 
   if (stage && statueImage && !saveData) {
-    const load = () => {
+    const load = async () => {
       if (!allowed.matches || !canWebGL()) return;
       window.removeEventListener('pointermove', load);
-      import('../scripts/statue3d')
-        .then(({ mountStatue3D }) => mountStatue3D({ stage, image: statueImage }))
-        .catch((error) => console.warn('[statue3d] keeping the image', error));
+      const { enqueue } = await import('../scripts/scene-queue');
+      // The queue also skips it on devices too slow for live 3D.
+      // Queued so it never sets up at the same time as the services tube.
+      enqueue(async () => {
+        const { mountStatue3D } = await import('../scripts/statue3d');
+        await mountStatue3D({ stage, image: statueImage });
+      }).catch((error) => console.warn('[statue3d] keeping the image', error));
     };
     window.addEventListener('pointermove', load, { passive: true });
   }

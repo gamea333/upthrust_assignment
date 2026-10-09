@@ -34,6 +34,7 @@ import {
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { markLowPower, whenQuiet } from './scene-queue';
 
 type Options = {
   section: HTMLElement;
@@ -58,6 +59,14 @@ export async function mountTube3D({
   addTicker,
   removeTicker,
 }: Options) {
+  // Step 1: fetch and decode the model (meshopt decoding runs in web workers).
+  MeshoptDecoder.useWorkers?.(2);
+  const gltf = await new GLTFLoader()
+    .setMeshoptDecoder(MeshoptDecoder)
+    .loadAsync('/models/tube.glb');
+  await whenQuiet();
+
+  // Step 2: renderer, environment and scene, in an idle slot.
   const canvas = document.createElement('canvas');
   canvas.className = 'tube-canvas';
   canvas.setAttribute('aria-hidden', 'true');
@@ -68,11 +77,16 @@ export async function mountTube3D({
     alpha: true,
     powerPreference: 'high-performance',
   });
-  // Start sharp; step down if the GPU can't keep up (see adaptQuality below).
-  let pixelRatio = Math.min(window.devicePixelRatio, 2);
+  // Full-screen canvas: 1.5x keeps it crisp at a fraction of 2x's cost; it
+  // steps down further if the GPU can't keep up (see adaptQuality below).
+  let pixelRatio = Math.min(window.devicePixelRatio, 1.5);
   renderer.setPixelRatio(pixelRatio);
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.outputColorSpace = SRGBColorSpace;
+  // Don't ask the GPU "did that shader compile?" after every compile: that
+  // forces the main thread to wait for the GPU (hundreds of ms of freeze) and
+  // defeats background compilation. These shaders are fixed and known-good.
+  renderer.debug.checkShaderErrors = false;
   renderer.localClippingEnabled = true;
 
   const scene = new Scene();
@@ -98,9 +112,6 @@ export async function mountTube3D({
     clippingPlanes: [clip],
   });
 
-  const gltf = await new GLTFLoader()
-    .setMeshoptDecoder(MeshoptDecoder)
-    .loadAsync('/models/tube.glb');
   const model: Object3D = gltf.scene;
   model.traverse((node) => {
     if ((node as Mesh).isMesh) (node as Mesh).material = material;
@@ -121,11 +132,6 @@ export async function mountTube3D({
   pivot.add(holder);
   scene.add(pivot);
 
-  // Above the (opaque) grid background, below the panels.
-  const grid = section.querySelector('[data-grid]');
-  if (grid) grid.after(canvas);
-  else section.prepend(canvas);
-
   let width = 0;
   let height = 0;
   const resize = () => {
@@ -142,6 +148,14 @@ export async function mountTube3D({
   resize();
   window.addEventListener('resize', resize);
 
+  // Step 3: compile the shaders in the background, then attach the canvas
+  // (above the opaque grid background, below the panels).
+  await renderer.compileAsync(scene, camera);
+  await whenQuiet();
+  const grid = section.querySelector('[data-grid]');
+  if (grid) grid.after(canvas);
+  else section.prepend(canvas);
+
   // Pointer tilt (eased towards the target every frame).
   const tilt = { x: 0, y: 0, tx: 0, ty: 0 };
   const onPointer = (e: PointerEvent) => {
@@ -155,19 +169,39 @@ export async function mountTube3D({
   const start = performance.now();
 
   // Adaptive quality: if frames average slower than ~45 fps for a second,
-  // render at a lower resolution (down to 1x). Keeps weak laptops smooth.
+  // render at a lower resolution; if it is still slow at 1x, this device is
+  // better off with the image, so hand back to it.
   let lastFrame = 0;
   let slowFrames = 0;
   let sampled = 0;
+  // Quick check: skip the first frames (GPU warm-up), then if the typical frame
+  // is slower than ~35 fps this device is better off with the images, so hand
+  // back to the image and skip any other 3D scene too.
+  const early: number[] = [];
   const adaptQuality = (now: number) => {
+    if (lastFrame && early.length < 40) {
+      early.push(now - lastFrame);
+      if (early.length === 40) {
+        const settled = early.slice(10).sort((a, b) => a - b);
+        if (settled[15] > 28) {
+          markLowPower();
+          queueMicrotask(destroy);
+          return;
+        }
+      }
+    }
     if (lastFrame) {
       sampled++;
       if (now - lastFrame > 22) slowFrames++;
       if (sampled >= 60) {
-        if (slowFrames > 20 && pixelRatio > 1) {
-          pixelRatio = Math.max(1, pixelRatio - 0.5);
-          renderer.setPixelRatio(pixelRatio);
-          renderer.setSize(width, height, false);
+        if (slowFrames > 20) {
+          if (pixelRatio > 1) {
+            pixelRatio = Math.max(1, pixelRatio - 0.5);
+            renderer.setPixelRatio(pixelRatio);
+            renderer.setSize(width, height, false);
+          } else {
+            queueMicrotask(destroy);
+          }
         }
         sampled = 0;
         slowFrames = 0;
@@ -226,22 +260,23 @@ export async function mountTube3D({
   render();
   section.classList.add('has-3d');
 
-  canvas.addEventListener('webglcontextlost', () => {
-    // GPU reset or driver issue: go back to the image for good.
-    removeTicker(render);
-    visibility.disconnect();
-    section.classList.remove('has-3d');
-    canvas.remove();
-  });
-
-  return () => {
+  // Back to the image for good (weak GPU, lost context, or unmount).
+  let destroyed = false;
+  function destroy() {
+    if (destroyed) return;
+    destroyed = true;
     removeTicker(render);
     visibility.disconnect();
     window.removeEventListener('resize', resize);
     section.removeEventListener('pointermove', onPointer);
     section.classList.remove('has-3d');
-    canvas.remove();
-    renderer.dispose();
-    material.dispose();
-  };
+    setTimeout(() => {
+      canvas.remove();
+      renderer.dispose();
+      material.dispose();
+    }, 900); // after the cross-fade back
+  }
+  canvas.addEventListener('webglcontextlost', destroy);
+
+  return destroy;
 }
