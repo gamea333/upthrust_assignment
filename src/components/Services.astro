@@ -100,6 +100,14 @@ const gridVars = await gridBackgroundVars();
   // immediately; this script only adds the pin and the scroll-linked movement.
   import { MOTION_QUERY, whenMotionAllowed } from '../scripts/motion';
 
+  const hasWebGL = () => {
+    try {
+      return !!document.createElement('canvas').getContext('webgl2');
+    } catch {
+      return false;
+    }
+  };
+
   const section = document.querySelector<HTMLElement>('[data-services]');
   const track = section?.querySelector<HTMLElement>('[data-track]');
 
@@ -181,7 +189,41 @@ const gridVars = await gridBackgroundVars();
         };
         track.addEventListener('focusin', onFocus);
 
-        return () => track.removeEventListener('focusin', onFocus);
+        // Live 3D tube (see src/scripts/tube3d.ts). Loaded only after the visitor
+        // starts scrolling and the section is about a screen away, so page-load
+        // metrics never include it. If WebGL is missing the image simply stays.
+        const tubeImage = section.querySelector<HTMLElement>('[data-tube]');
+        let unmountTube: (() => void) | undefined;
+        let cancelled = false;
+        const near = new IntersectionObserver(
+          async ([entry]) => {
+            if (!entry.isIntersecting || !tubeImage || !hasWebGL()) return;
+            near.disconnect();
+            const { mountTube3D } = await import('../scripts/tube3d');
+            if (cancelled) return;
+            unmountTube = await mountTube3D({
+              section,
+              image: tubeImage,
+              getProgress: () => tween.scrollTrigger?.progress ?? 0,
+              addTicker: (fn) => gsap.ticker.add(fn),
+              removeTicker: (fn) => gsap.ticker.remove(fn),
+            }).catch((error) => {
+              console.warn('[tube3d] falling back to the image', error);
+              return undefined;
+            });
+          },
+          { rootMargin: '0px 0px 100% 0px' },
+        );
+        const startWatching = () => near.observe(section);
+        window.addEventListener('scroll', startWatching, { once: true, passive: true });
+
+        return () => {
+          cancelled = true;
+          near.disconnect();
+          window.removeEventListener('scroll', startWatching);
+          unmountTube?.();
+          track.removeEventListener('focusin', onFocus);
+        };
       });
     });
   }
@@ -446,6 +488,27 @@ const gridVars = await gridBackgroundVars();
 
     /* One continuous high-res tube behind all panels (same framing the per-panel
        backgrounds used: vertically 30% down the panel). */
+    /* Live 3D tube canvas (desktop): covers the pinned screen, behind the panels. */
+    :global(.tube-canvas) {
+      position: absolute;
+      inset: 0 0 auto;
+      width: 100%;
+      height: 100vh;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.8s var(--ease-out);
+    }
+
+    .services:global(.has-3d) :global(.tube-canvas) {
+      opacity: 1;
+    }
+
+    /* The image stays in place (the 3D tube reads its position) but is hidden. */
+    .services:global(.has-3d) .tube {
+      opacity: 0;
+      transition: opacity 0.8s var(--ease-out);
+    }
+
     :global(.js) .tube {
       display: block;
       position: absolute;
