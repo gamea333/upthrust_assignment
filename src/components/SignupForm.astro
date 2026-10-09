@@ -19,22 +19,27 @@ const { signup } = footer;
     {signup.title}
   </h3>
 
-  <div class="field">
+  <div class="field" data-field="email">
     <label for="signup-email">Email address</label>
-    <input
-      id="signup-email"
-      name="email"
-      type="email"
-      autocomplete="email"
-      inputmode="email"
-      placeholder={signup.placeholder}
-      required
-      aria-describedby="signup-email-error"
-    />
+    <div class="input-wrap">
+      <input
+        id="signup-email"
+        name="email"
+        type="email"
+        autocomplete="email"
+        inputmode="email"
+        placeholder={signup.placeholder}
+        required
+        aria-describedby="signup-email-error"
+      />
+      <svg class="valid-tick" viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M3 8.5l3.2 3L13 4.5" />
+      </svg>
+    </div>
     <p id="signup-email-error" class="error" data-error="email" hidden></p>
   </div>
 
-  <div class="field">
+  <div class="field" data-field="consent">
     <label class="consent">
       <input
         name="consent"
@@ -55,12 +60,19 @@ const { signup } = footer;
   </div>
 
   <button type="submit" class="submit" data-magnetic>
-    {signup.button}
+    <span class="label" data-label>
+      {signup.button}
+    </span>
+    <span class="spinner" aria-hidden="true"></span>
   </button>
 
   <p class="status" role="status" aria-live="polite" data-status></p>
   <p class="success" data-success hidden tabindex="-1">
-    {signup.success}
+    <svg class="success-tick" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="10.5" />
+      <path d="M7 12.5l3.2 3.2L17 9" />
+    </svg>
+    <span>{signup.success}</span>
   </p>
 </form>
 
@@ -91,9 +103,13 @@ const { signup } = footer;
     color: #bdbdbd;
   }
 
+  .input-wrap {
+    position: relative;
+  }
+
   input[type='email'] {
     width: 100%;
-    padding: 0.75rem 0;
+    padding: 0.75rem 1.75rem 0.75rem 0;
     border: 0;
     border-bottom: 1px solid #555;
     background: transparent;
@@ -112,6 +128,32 @@ const { signup } = footer;
 
   input[aria-invalid='true'] {
     border-bottom-color: #ff7a52;
+  }
+
+  /* Small tick at the end of the field once the email looks right. */
+  .valid-tick {
+    position: absolute;
+    right: 0.125rem;
+    top: 50%;
+    width: 1rem;
+    height: 1rem;
+    translate: 0 -50%;
+    fill: none;
+    stroke: var(--color-brand);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 16;
+    stroke-dashoffset: 16;
+    opacity: 0;
+    transition:
+      stroke-dashoffset 0.4s var(--ease-out),
+      opacity 0.2s;
+  }
+
+  .field.is-valid .valid-tick {
+    stroke-dashoffset: 0;
+    opacity: 1;
   }
 
   .consent {
@@ -144,7 +186,11 @@ const { signup } = footer;
   }
 
   .submit {
+    position: relative;
     justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
     padding: 0.625rem 1.25rem;
     background: var(--color-paper);
     color: var(--color-ink);
@@ -162,8 +208,29 @@ const { signup } = footer;
   }
 
   .submit[disabled] {
-    opacity: 0.6;
+    opacity: 0.75;
     cursor: progress;
+  }
+
+  /* Loading spinner, only while the request is in flight. */
+  .spinner {
+    display: none;
+    width: 0.875rem;
+    height: 0.875rem;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+  }
+
+  .submit[aria-busy='true'] .spinner {
+    display: inline-block;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      rotate: 1turn;
+    }
   }
 
   .status:empty {
@@ -171,10 +238,72 @@ const { signup } = footer;
   }
 
   .success {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
     padding: 1rem;
     border: 1px solid var(--color-brand);
     font-size: 1rem;
     font-weight: 600;
+  }
+
+  .success-tick {
+    flex: none;
+    width: 1.75rem;
+    height: 1.75rem;
+    fill: none;
+    stroke: var(--color-brand);
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    /* Success: the box slides in, then the circle and tick draw themselves. */
+    .success:not([hidden]) {
+      animation: success-in 0.5s var(--ease-out) both;
+    }
+
+    .success-tick circle {
+      stroke-dasharray: 66;
+      stroke-dashoffset: 66;
+      animation: draw 0.6s var(--ease-out) 0.15s forwards;
+    }
+
+    .success-tick path {
+      stroke-dasharray: 16;
+      stroke-dashoffset: 16;
+      animation: draw 0.35s var(--ease-out) 0.6s forwards;
+    }
+
+    /* Invalid field on submit: a short horizontal shake. */
+    .field.is-shaking {
+      animation: shake 0.4s var(--ease-out);
+    }
+
+    @keyframes success-in {
+      from {
+        opacity: 0;
+        translate: 0 0.75rem;
+      }
+    }
+
+    @keyframes draw {
+      to {
+        stroke-dashoffset: 0;
+      }
+    }
+
+    @keyframes shake {
+      20%,
+      60% {
+        translate: -6px 0;
+      }
+      40%,
+      80% {
+        translate: 6px 0;
+      }
+    }
   }
 
   .signup.is-done .field,
