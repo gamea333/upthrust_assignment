@@ -13,7 +13,6 @@ Production build of the Upthrust landing page from the supplied Figma design and
 | **PageSpeed: desktop**          | [100 / 100 / 100 / 100](https://pagespeed.web.dev/analysis/https-upthrust-assignment-rho-vercel-app/x0id8lwfoj?form_factor=desktop)                                                                                                             |
 | **Structured data**             | [Schema.org validator](https://validator.schema.org/#url=https%3A%2F%2Fupthrust-assignment-rho.vercel.app%2F) · [Google Rich Results Test](https://search.google.com/test/rich-results?url=https%3A%2F%2Fupthrust-assignment-rho.vercel.app%2F) |
 | **Social preview (Open Graph)** | [opengraph.xyz](https://www.opengraph.xyz/url/https%3A%2F%2Fupthrust-assignment-rho.vercel.app%2F)                                                                                                                                              |
-| **Google Tag Manager**          | Container `GTM-K7FCMLW3` (verified with Tag Assistant, see below)                                                                                                                                                                               |
 | **Form submissions**            | Supabase table `newsletter_signups` (shown live; the dashboard is private)                                                                                                                                                                      |
 
 PageSpeed scores move a few points between runs. Mobile has scored 93–97 in every run since launch, against a target of 85.
@@ -185,10 +184,6 @@ The Figma file is desktop-only, so the tablet and mobile layouts are my own adap
   - real footer copy instead of the placeholder text;
   - a full-screen mobile menu;
   - a privacy page and a 404 page.
-
-| 375 px                                                                         | 768 px                                                                         |
-| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
-| <img src=".github/readme/responsive-375.webp" width="260" alt="Mobile layout"> | <img src=".github/readme/responsive-768.webp" width="360" alt="Tablet layout"> |
 
 ## Updating the site safely after launch
 
